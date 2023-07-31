@@ -4,6 +4,7 @@
   "dataset": "CIFAR100",
   "beta3": 0.3,
   "beta4": 0.7,
+  "eps": 1e-5,
   "epochs": 100,
   "n_head": 8,
   "depth": 6,

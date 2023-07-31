@@ -1,21 +1,18 @@
 """Train CIFAR10 with PyTorch."""
 import argparse
 import json
-import os
 import time
 from copy import copy
-from functools import partial
 
 import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 from torch.cuda.amp import GradScaler
 
-from optmizerAd import DAdam
+from minREV.optmizerAd import DAdam
 
 import wandb
 from fast_rev import FastRevViT
@@ -47,7 +44,7 @@ def parse_args():
     parser.add_argument("--beta4", default=0.7, type=float, help="beta4 for fame")
     parser.add_argument("--use_wandb", default=False)
     parser.add_argument("--load", default=None, help="Path to init weights")
-
+    parser.add_argument("--eps", default=1e-8, help="epsilon for fame optimizer")
 
     parser.add_argument("--config", type=str)
 
