@@ -1,17 +1,14 @@
 {
-  "model": "vit",
+  "name": "imagenet-pretrained",
+  "model_type": "ViT-L_32",
   "optimizer": "fame",
-  "dataset": "CIFAR100",
+  "dataset": "cifar100",
   "beta3": 0.3,
   "beta4": 0.7,
-  "epochs": 100,
-  "n_head": 8,
-  "depth": 6,
-  "embed_dim": 128,
-  "bs": 128,
-  "lr": 1e-3,
+  "eps": 1e-5,
+  "num_steps": 100,
+  "learning_rate": 1e-3,
   "seed": 0,
-  "use_wandb": false,
-  "load": "W1.pt",
-  "num_classes": 100
+  "pretrained_dir": "pre_trained_models/imagenet21k_ViT-L_32.npz",
+  "use_wandb": false
 }

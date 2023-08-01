@@ -70,7 +70,7 @@ def setup(args):
     num_classes = 10 if args.dataset == "cifar10" else 100
 
     model = VisionTransformer(config, args.img_size, zero_head=True, num_classes=num_classes)
-    model.load_from(np.load(args.pretrained_dir))
+    model.load_from(np.load(os.path.join(args.pretrained_dir)))
     model.to(args.device)
     num_params = count_parameters(model)
 
@@ -164,9 +164,9 @@ def train(args, model):
                                     momentum=0.9,
                                     weight_decay=args.weight_decay)
     elif args.optimizer == 'adam':
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     elif args.optimizer == 'fame':
-        optimizer = DAdam(model.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps)
+        optimizer = DAdam(model.parameters(), lr=args.learning_rate, beta3=args.beta3, beta4=args.beta4, eps=args.eps)
     else:
         raise Exception(f"no {args.optimizer} optimizer")
 
@@ -300,7 +300,7 @@ def apply_config(args: argparse.Namespace, config_path: str):
 def main():
     parser = argparse.ArgumentParser()
     # Required parameters
-    parser.add_argument("--name", required=True,
+    parser.add_argument("--name", required=False,
                         help="Name of this run. Used for monitoring.")
     parser.add_argument("--dataset", choices=["cifar10", "cifar100"], default="cifar10",
                         help="Which downstream task.")
@@ -352,7 +352,6 @@ def main():
                              "0 (default value): dynamic loss scaling.\n"
                              "Positive power of 2: static loss scaling value.\n")
 
-    parser.add_argument("--seed", default=0, type=int, help="seed")
     parser.add_argument("--optimizer", default="adam", type=str, help="optimizer type, adam/sgd/fame")
     parser.add_argument("--beta3", default=0.3, type=float, help="beta3 for fame")
     parser.add_argument("--beta4", default=0.7, type=float, help="beta4 for fame")

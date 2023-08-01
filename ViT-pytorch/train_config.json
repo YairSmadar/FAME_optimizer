@@ -9,6 +9,6 @@
   "num_steps": 100,
   "learning_rate": 1e-3,
   "seed": 0,
-  "pretrained_dir": "W1.pt",
+  "pretrained_dir": "pre_trained_models/ViT-L_32.npz",
   "use_wandb": true
 }
