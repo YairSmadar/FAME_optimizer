@@ -1,0 +1,5 @@
+tqdm
+tensorboard
+ml-collections
+apex
+scipy
