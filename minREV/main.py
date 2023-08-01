@@ -185,7 +185,7 @@ def generate_wandb_name(args):
 
     if args.optimizer == 'fame':
         name += f"_b3-{args.beta3}"
-        name += f"_b4-{args.beta3}"
+        name += f"_b4-{args.beta4}"
 
     return name
 
