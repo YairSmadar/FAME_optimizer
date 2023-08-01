@@ -6,7 +6,7 @@
   "beta3": 0.3,
   "beta4": 0.7,
   "eps": 1e-5,
-  "num_steps": 100,
+  "num_steps": 10000,
   "learning_rate": 1e-3,
   "train_batch_size": 256,
   "seed": 0,
