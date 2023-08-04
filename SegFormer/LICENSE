@@ -1,3 +1,5 @@
+export PYTHONPATH=$PYTHONPATH:~/FAME_optimizer
+
 NVIDIA Source Code License for SegFormer
 
 1. Definitions
