@@ -9,7 +9,7 @@ import torch
 from mmcv.runner import init_dist
 from mmcv.utils import Config, DictAction, get_git_hash
 
-from SegFormer.mmseg import __version__
+from ..mmseg import __version__
 from SegFormer.mmseg.apis import set_random_seed, train_segmentor
 from SegFormer.mmseg.datasets import build_dataset
 from SegFormer.mmseg.models import build_segmentor
