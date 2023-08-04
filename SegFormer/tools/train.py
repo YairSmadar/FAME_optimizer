@@ -15,6 +15,13 @@ from SegFormer.mmseg.datasets import build_dataset
 from SegFormer.mmseg.models import build_segmentor
 from SegFormer.mmseg.utils import collect_env, get_root_logger
 
+import os
+import sys
+
+# Add the project's root directory to sys.path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(project_root)
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a segmentor')
