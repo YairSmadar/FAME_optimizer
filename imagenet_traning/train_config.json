@@ -1,6 +1,6 @@
 {
   "arch": "resnet18",
-  "optimizer": "fame",
+  "optimizer": "sgd",
   "dataset": "cifar18",
   "beta3": 0.3,
   "beta4": 0.8,
@@ -10,5 +10,5 @@
   "lr": 0.1,
   "seed": 0,
   "use_wandb": true,
-  "resume": "checkpoint.pth.tar"
+  "resume": "W1_linux.pth.tar"
 }
