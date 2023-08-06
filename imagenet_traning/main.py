@@ -328,6 +328,17 @@ def main_worker(gpu, ngpus_per_node, args):
         validate(val_loader, model, criterion, args)
         return
 
+    save_checkpoint({
+        'epoch': 0,
+        'arch': args.arch,
+        'state_dict': model.state_dict(),
+        'best_acc1': best_acc1,
+        'optimizer': optimizer.state_dict(),
+        'optim_def': optimizer.defaults,
+        'scheduler': scheduler.state_dict()
+    }, False)
+    exit(1)
+
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
