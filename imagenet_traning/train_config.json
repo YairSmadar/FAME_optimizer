@@ -9,4 +9,6 @@
   "batch_size": 256,
   "lr": 0.1,
   "seed": 0,
-  "use_wandb": true}
+  "use_wandb": true,
+  "resume": "checkpoint.pth.tar"
+}
