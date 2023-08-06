@@ -1,18 +1,13 @@
 {
-  "model": "vit",
+  "arch": "resnet18",
   "optimizer": "fame",
-  "dataset": "CIFAR100",
+  "dataset": "cifar18",
   "beta3": 0.3,
-  "beta4": 0.7,
-  "eps": 1e-5,
+  "beta4": 0.8,
   "epochs": 100,
-  "n_head": 8,
-  "depth": 6,
-  "embed_dim": 128,
-  "bs": 128,
-  "lr": 1e-3,
+  "batch_size": 256,
+  "lr": 0.1,
   "seed": 0,
   "use_wandb": true,
-  "load": "W1.pt",
-  "num_classes": 100
+  "resume": "W1.pth.tar"
 }
