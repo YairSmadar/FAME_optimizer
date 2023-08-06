@@ -11,5 +11,6 @@
   "seed": 0,
   "use_wandb": false,
   "resume": "W1_win.pth.tar",
-  "dummy": true
+  "dummy": true,
+  "print_freq": 1
 }
