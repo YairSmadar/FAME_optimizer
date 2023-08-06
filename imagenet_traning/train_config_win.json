@@ -1,6 +1,6 @@
 {
   "arch": "resnet18",
-  "optimizer": "fame",
+  "optimizer": "sgd",
   "dataset": "cifar18",
   "beta3": 0.3,
   "beta4": 0.8,
@@ -9,7 +9,7 @@
   "batch_size": 256,
   "lr": 0.1,
   "seed": 0,
-  "use_wandb": true,
-  "resume": "W1.pth.tar",
+  "use_wandb": false,
+  "resume": "W1_win.pth.tar",
   "dummy": true
 }

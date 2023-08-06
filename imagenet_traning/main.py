@@ -257,7 +257,7 @@ def main_worker(gpu, ngpus_per_node, args):
         if os.path.isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))
             if args.gpu is None:
-                checkpoint = torch.load(args.resume)
+                checkpoint = torch.load(args.resume, map_location=torch.device(device))
             elif torch.cuda.is_available():
                 # Map model to be loaded to specified single gpu.
                 loc = 'cuda:{}'.format(args.gpu)
@@ -269,10 +269,10 @@ def main_worker(gpu, ngpus_per_node, args):
                 best_acc1 = best_acc1.to(args.gpu)
             model.load_state_dict(checkpoint['state_dict'])
 
-            optimizer.load_state_dict(checkpoint['optimizer'])
+            # optimizer.load_state_dict(checkpoint['optimizer'])
             scheduler.load_state_dict(checkpoint['scheduler'])
-            optim_def = checkpoint['optim_def']
-            optimizer.__dict__['param_groups'][0].update(optim_def)
+            # optim_def = checkpoint['optim_def']
+            # optimizer.__dict__['param_groups'][0].update(optim_def)
 
             print("=> loaded checkpoint '{}' (epoch {})"
                   .format(args.resume, checkpoint['epoch']))
@@ -328,14 +328,14 @@ def main_worker(gpu, ngpus_per_node, args):
         validate(val_loader, model, criterion, args)
         return
 
-    if False:
+    if True:
         save_checkpoint({
             'epoch': -1 + 1,
             'arch': args.arch,
             'state_dict': model.state_dict(),
             'best_acc1': best_acc1,
-            'optimizer': optimizer.state_dict(),
-            'optim_def': optimizer.defaults,
+            # 'optimizer': optimizer.state_dict(),
+            # 'optim_def': optimizer.defaults,
             'scheduler': scheduler.state_dict()
         }, False)
         exit(1)
