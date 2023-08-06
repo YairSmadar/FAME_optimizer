@@ -9,6 +9,4 @@
   "batch_size": 256,
   "lr": 0.1,
   "seed": 0,
-  "use_wandb": true,
-  "resume": "W1.pth.tar"
-}
+  "use_wandb": true}
