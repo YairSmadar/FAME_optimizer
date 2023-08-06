@@ -328,7 +328,7 @@ def main_worker(gpu, ngpus_per_node, args):
         validate(val_loader, model, criterion, args)
         return
 
-    if True:
+    if False:
         save_checkpoint({
             'epoch': -1 + 1,
             'arch': args.arch,
@@ -374,8 +374,8 @@ def main_worker(gpu, ngpus_per_node, args):
                 'arch': args.arch,
                 'state_dict': model.state_dict(),
                 'best_acc1': best_acc1,
-                'optimizer': optimizer.state_dict(),
-                'optim_def': optimizer.defaults,
+                # 'optimizer': optimizer.state_dict(),
+                # 'optim_def': optimizer.defaults,
                 'scheduler': scheduler.state_dict()
             }, is_best)
 
