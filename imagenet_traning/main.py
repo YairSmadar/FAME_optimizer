@@ -328,7 +328,7 @@ def main_worker(gpu, ngpus_per_node, args):
         validate(val_loader, model, criterion, args)
         return
 
-    if False:
+    if True:
         save_checkpoint({
             'epoch': -1 + 1,
             'arch': args.arch,
@@ -337,7 +337,7 @@ def main_worker(gpu, ngpus_per_node, args):
             # 'optimizer': optimizer.state_dict(),
             # 'optim_def': optimizer.defaults,
             'scheduler': scheduler.state_dict()
-        }, False)
+        }, False, filename='W2.pth.tar')
         exit(1)
 
     for epoch in range(args.start_epoch, args.epochs):
