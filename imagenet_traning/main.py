@@ -328,7 +328,7 @@ def main_worker(gpu, ngpus_per_node, args):
         validate(val_loader, model, criterion, args)
         return
 
-    if True:
+    if False:
         save_checkpoint({
             'epoch': -1 + 1,
             'arch': args.arch,
