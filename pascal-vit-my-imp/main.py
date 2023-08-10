@@ -300,7 +300,7 @@ def train(args):
         if args.use_wandb:
             wandb.log(
                 {
-                    "test_acc": average_accuracy_per_label,
+                    "test_acc": average_exact_match_ratio.item(),
                 }
             )
 
