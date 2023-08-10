@@ -270,7 +270,8 @@ def train(args):
         average_accuracy_per_label = total_accuracy_per_label / len(train_loader)
         average_exact_match_ratio = total_exact_match_ratio / len(train_loader)
 
-        print(f"Epoch [{epoch + 1}/{args.epochs}], Train Loss: {avg_loss:.4f}, Train Accuracy: {average_accuracy_per_label:.4f}")
+        print(f"Epoch [{epoch + 1}/{args.epochs}], Train Loss: {avg_loss:.4f}, "
+              f"Train Accuracy: {average_exact_match_ratio.item():.4f}")
 
         val_loss = 0.0
         total_accuracy_per_label = 0
@@ -304,10 +305,11 @@ def train(args):
             )
 
             wandb.run.summary["best_test_accuracy"] = \
-                average_accuracy_per_label if average_accuracy_per_label > wandb.run.summary["best_test_acc"] \
+                average_exact_match_ratio.item() if average_exact_match_ratio.item() > wandb.run.summary["best_test_acc"] \
                     else wandb.run.summary["best_test_acc"]
 
-        print(f"Epoch [{epoch + 1}/{args.epochs}], Validation Loss: {avg_val_loss:.4f}, Validation Accuracy: {average_accuracy_per_label:.4f}")
+        print(f"Epoch [{epoch + 1}/{args.epochs}], Validation Loss: {avg_val_loss:.4f}, "
+              f"Validation Accuracy: {average_exact_match_ratio.item():.4f}")
 
 
 if __name__ == "__main__":
