@@ -241,6 +241,8 @@ def train(args):
     else:
         raise Exception(f"no {args.optimizer} optimizer")
 
+    print('Train Start!')
+
     for epoch in range(args.epochs):
         model.train()
         total_loss = 0.0
