@@ -12,6 +12,8 @@ import numpy as np
 import wandb
 from optmizerAd import DAdam
 from torch.utils.data import random_split
+from sklearn.metrics import f1_score, roc_auc_score, hamming_loss
+
 
 VOC_CLASSES = [
     "aeroplane",
@@ -189,6 +191,28 @@ def average_class_accuracy(predictions, targets):
     return class_accuracies.mean().item() * 100  # Multiply by 100 to get percentage
 
 
+def evaluate_predictions(predictions, targets):
+    """
+    Compute various evaluation metrics for multi-label classification.
+    """
+    # Convert sigmoid outputs to binary labels
+    predicted_labels = (predictions > 0.5).float()
+
+    f1 = f1_score(targets.cpu().numpy(), predicted_labels.cpu().numpy(), average='macro')
+    hamming = hamming_loss(targets.cpu().numpy(), predicted_labels.cpu().numpy())
+
+    # For ROC AUC, we use the raw model outputs (not binarized)
+    # and assume targets are binarized (0 or 1 for each label)
+    try:
+        roc_auc = roc_auc_score(targets.cpu().numpy(), predictions.cpu().detach().numpy(), average='macro')
+    except ValueError:
+        # This might happen if there's no positive class for a label in the batch
+        # Setting ROC AUC to a default value of 0.5 (random guessing) in such cases
+        roc_auc = 0.5
+
+    return f1, hamming, roc_auc
+
+
 def train(args):
     set_seed(args.seed)
 
@@ -198,7 +222,9 @@ def train(args):
                    name=generate_wandb_name(args),
                    config=args)
 
-        wandb.run.summary["best_test_acc"] = 0
+        wandb.run.summary["best_test_f1"] = 0
+        wandb.run.summary["best_test_roc_auc"] = 0
+
 
     transform = transforms.Compose([
         transforms.Resize((224, 224)),  # ViT usually expects images of size 224x224
@@ -258,7 +284,9 @@ def train(args):
         total_exact_match_ratio = 0
         total_class_accuracy = 0.0
         num_batches = 0
-
+        total_f1 = 0
+        total_hamming = 0
+        total_roc_auc = 0
         for images, targets in train_loader:
             optimizer.zero_grad()
 
@@ -277,8 +305,10 @@ def train(args):
             total_accuracy_per_label += accuracy_per_label
             total_exact_match_ratio += exact_match_ratio
 
-            predictions = (torch.sigmoid(outputs) > 0.5).float()
-            total_class_accuracy += average_class_accuracy(predictions, targets)
+            f1, hamming, roc_auc = evaluate_predictions(torch.sigmoid(outputs), targets)
+            total_f1 += f1
+            total_hamming += hamming
+            total_roc_auc += roc_auc
             num_batches += 1
         avg_loss = total_loss / len(train_loader)
 
@@ -286,14 +316,21 @@ def train(args):
         average_exact_match_ratio = total_exact_match_ratio / len(train_loader)
         epoch_average_class_accuracy = total_class_accuracy / num_batches
 
+        average_f1 = total_f1 / num_batches
+        average_hamming = total_hamming / num_batches
+        average_roc_auc = total_roc_auc / num_batches
+
         print(f"Epoch [{epoch + 1}/{args.epochs}], Train Loss: {avg_loss:.4f}, "
-              f"Train Accuracy: {epoch_average_class_accuracy:.4f}")
+              f"Train f1: {average_f1:.4f}, Train ROC AUC: {average_roc_auc:.4f}")
 
         val_loss = 0.0
         total_accuracy_per_label = 0
         total_exact_match_ratio = 0
         total_class_accuracy = 0.0
         num_batches = 0
+        total_f1 = 0
+        total_hamming = 0
+        total_roc_auc = 0
 
         model.eval()  # set model to evaluation mode
         with torch.no_grad():
@@ -313,6 +350,11 @@ def train(args):
                 total_class_accuracy += average_class_accuracy(predictions, targets)
                 num_batches += 1
 
+                f1, hamming, roc_auc = evaluate_predictions(torch.sigmoid(outputs), targets)
+                total_f1 += f1
+                total_hamming += hamming
+                total_roc_auc += roc_auc
+
         avg_val_loss = val_loss / len(val_loader)
         average_accuracy_per_label = total_accuracy_per_label / len(val_loader)
         average_exact_match_ratio = total_exact_match_ratio / len(val_loader)
@@ -320,19 +362,28 @@ def train(args):
         # print("Valid: Average exact match ratio:", average_exact_match_ratio)
         epoch_average_class_accuracy = total_class_accuracy / num_batches
 
+        average_f1 = total_f1 / num_batches
+        average_hamming = total_hamming / num_batches
+        average_roc_auc = total_roc_auc / num_batches
+
         if args.use_wandb:
             wandb.log(
                 {
-                    "test_acc": epoch_average_class_accuracy,
+                    "test_f1": average_f1,
+                    "test_roc_auc": average_roc_auc,
                 }
             )
 
-            wandb.run.summary["best_test_accuracy"] = \
-                epoch_average_class_accuracy if epoch_average_class_accuracy > wandb.run.summary["best_test_acc"] \
-                    else wandb.run.summary["best_test_acc"]
+            wandb.run.summary["best_test_f1"] = \
+                average_f1 if average_f1 > wandb.run.summary["best_test_f1"] \
+                    else wandb.run.summary["best_test_f1"]
 
-        print(f"Epoch [{epoch + 1}/{args.epochs}], Validation Loss: {avg_val_loss:.4f}, "
-              f"Validation Accuracy: {epoch_average_class_accuracy:.4f}")
+            wandb.run.summary["best_test_roc_auc"] = \
+                average_roc_auc if average_roc_auc > wandb.run.summary["best_test_roc_auc"] \
+                    else wandb.run.summary["best_test_roc_auc"]
+
+        print(f"Epoch [{epoch + 1}/{args.epochs}], Test Loss: {avg_loss:.4f}, "
+              f"Test f1: {average_f1:.4f}, Test ROC AUC: {average_roc_auc:.4f}")
 
 
 if __name__ == "__main__":
