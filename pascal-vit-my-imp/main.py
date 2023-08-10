@@ -252,6 +252,7 @@ def train(args):
 
             images = images.to(device)
             targets = torch.stack([target_transform(target) for target in targets])
+            targets = targets.to(device)
 
             outputs = model(images)
             loss = criterion(outputs, targets)
@@ -280,6 +281,7 @@ def train(args):
             for images, targets in val_loader:
                 images = images.to(device)
                 targets = torch.stack([target_transform(target) for target in targets])
+                targets = targets.to(device)
 
                 outputs = model(images)
                 loss = criterion(outputs, targets)
