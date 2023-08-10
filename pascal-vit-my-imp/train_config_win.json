@@ -1,15 +1,13 @@
 {
   "epochs": 100,
-  "model_name": "ViT-vit_base_patch16_224",
+  "model_name": "vit_base_patch16_224",
   "optimizer": "fame",
   "dataset": "pascal-voc",
   "beta3": 0.3,
   "beta4": 0.8,
-  "eps": 1e-2,
+  "eps": 1e-3,
   "lr": 1e-3,
-  "batch_size": 256,
+  "batch_size": 1,
   "seed": 0,
-  "use_wandb": false,
-  "save_init_weights_path": "W1.pth",
-  "load_init_weights_path": "W1.pth"
+  "use_wandb": false
 }

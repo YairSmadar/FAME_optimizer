@@ -8,10 +8,33 @@ import torchvision
 from torchvision import transforms
 import timm
 import torch.optim as optim
-import np
+import numpy as np
 import wandb
 from optmizerAd import DAdam
 from torch.utils.data import random_split
+
+VOC_CLASSES = [
+    "aeroplane",
+    "bicycle",
+    "bird",
+    "boat",
+    "bottle",
+    "bus",
+    "car",
+    "cat",
+    "chair",
+    "cow",
+    "diningtable",
+    "dog",
+    "horse",
+    "motorbike",
+    "person",
+    "pottedplant",
+    "sheep",
+    "sofa",
+    "train",
+    "tvmonitor",
+]
 
 
 def set_seed(seed):
@@ -119,6 +142,46 @@ def deterministic_stratified_split(dataset, train_ratio=0.8):
     return train_indices, val_indices
 
 
+def collate_fn(batch):
+
+    images, targets = zip(*batch)
+
+    # Convert images into a single tensor
+    images = torch.stack(images, 0)
+
+    return images, targets
+
+
+def target_transform(target):
+    # Convert the annotations into a binary vector.
+    classes = ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor')
+    label = torch.zeros(len(classes))
+    for obj in target['annotation']['object']:
+        label[classes.index(obj['name'])] = 1
+    return label
+
+
+def calculate_metrics(logits, targets, threshold=0.5):
+    """
+    Compute per-label accuracy and exact match ratio.
+    logits: Tensor of shape (batch_size, num_classes)
+    targets: Tensor of shape (batch_size, num_classes)
+    threshold: threshold for classification
+    """
+    # Convert logits to binary predictions
+    predictions = (torch.sigmoid(logits) > threshold).float()
+
+    # Per-label accuracy
+    correct_per_label = (predictions == targets).float().sum(dim=0)
+    accuracy_per_label = correct_per_label / targets.size(0)
+
+    # Exact match ratio
+    correct_samples = (predictions == targets).all(dim=1).float().sum()
+    exact_match_ratio = correct_samples / targets.size(0)
+
+    return accuracy_per_label, exact_match_ratio
+
+
 def train(args):
     set_seed(args.seed)
 
@@ -136,15 +199,15 @@ def train(args):
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # ImageNet stats
     ])
 
-    train_data = torchvision.datasets.VOCDetection(root=args.data_root, year='2012', image_set='train', download=True,
+    train_data = torchvision.datasets.VOCDetection(root=args.data_root, year='2012', image_set='train', download=False,
                                                    transform=transform)
+    val_data = torchvision.datasets.VOCDetection(root=args.data_root, year='2007', image_set='test', download=False,
+                                                 transform=transform)
 
-    train_indices, val_indices = deterministic_stratified_split(train_data, train_ratio=0.8)
-    train_dataset = torch.utils.data.Subset(train_data, train_indices)
-    val_dataset = torch.utils.data.Subset(train_data, val_indices)
-
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=False,
+                                               collate_fn=collate_fn)
+    val_loader = torch.utils.data.DataLoader(val_data, batch_size=args.batch_size, shuffle=False,
+                                             collate_fn=collate_fn)
 
     model = timm.create_model(args.model_name, pretrained=False, num_classes=20)  # 20 classes for Pascal VOC
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -160,7 +223,7 @@ def train(args):
             raise ValueError(f"Provided weights path {args.load_init_weights_path} does not exist!")
         model.load_state_dict(torch.load(args.load_init_weights_path))
 
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.BCEWithLogitsLoss()
 
     # Prepare optimizer and scheduler
     if args.optimizer == 'sgd':
@@ -178,58 +241,70 @@ def train(args):
     for epoch in range(args.epochs):
         model.train()
         total_loss = 0.0
+        total_accuracy_per_label = 0
+        total_exact_match_ratio = 0
+
         for images, targets in train_loader:
             optimizer.zero_grad()
 
             images = images.to(device)
-
-            # Pascal VOC provides multiple annotations. For simplicity, use the first class label.
-            labels = [int(target['annotation']['object'][0]['name']) for target in targets]
-            labels = torch.tensor(labels).to(device)
+            targets = torch.stack([target_transform(target) for target in targets])
 
             outputs = model(images)
-            loss = criterion(outputs, labels)
+            loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
 
             total_loss += loss.item()
 
+            accuracy_per_label, exact_match_ratio = calculate_metrics(outputs, targets)
+            total_accuracy_per_label += accuracy_per_label
+            total_exact_match_ratio += exact_match_ratio
+
         avg_loss = total_loss / len(train_loader)
 
-        # Calculate accuracy on the training set (you might want to do this on a validation set too)
-        train_accuracy = compute_accuracy(model, train_loader, device)
+        average_accuracy_per_label = total_accuracy_per_label / len(train_loader)
+        average_exact_match_ratio = total_exact_match_ratio / len(train_loader)
+
+        print(f"Epoch [{epoch + 1}/{args.epochs}], Train Loss: {avg_loss:.4f}, Train Accuracy: {average_accuracy_per_label:.4f}")
 
         val_loss = 0.0
+        total_accuracy_per_label = 0
+        total_exact_match_ratio = 0
 
         model.eval()  # set model to evaluation mode
         with torch.no_grad():
             for images, targets in val_loader:
                 images = images.to(device)
-                labels = [int(target['annotation']['object'][0]['name']) for target in targets]
-                labels = torch.tensor(labels).to(device)
+                targets = torch.stack([target_transform(target) for target in targets])
 
                 outputs = model(images)
-                loss = criterion(outputs, labels)
+                loss = criterion(outputs, targets)
                 val_loss += loss.item()
+                accuracy_per_label, exact_match_ratio = calculate_metrics(outputs, targets)
+                total_accuracy_per_label += accuracy_per_label
+                total_exact_match_ratio += exact_match_ratio
 
         avg_val_loss = val_loss / len(val_loader)
-        val_accuracy = compute_accuracy(model, val_loader, device)
-        print(f"Validation Loss: {avg_val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%")
+        average_accuracy_per_label = total_accuracy_per_label / len(val_loader)
+        average_exact_match_ratio = total_exact_match_ratio / len(val_loader)
+        # print("Valid: Average per-label accuracy:", average_accuracy_per_label)
+        # print("Valid: Average exact match ratio:", average_exact_match_ratio)
 
         if args.use_wandb:
             wandb.log(
                 {
-                    "test_acc": val_accuracy,
+                    "test_acc": average_accuracy_per_label,
                 }
             )
 
             wandb.run.summary["best_test_accuracy"] = \
-                val_accuracy if val_accuracy > wandb.run.summary["best_test_acc"] \
+                average_accuracy_per_label if average_accuracy_per_label > wandb.run.summary["best_test_acc"] \
                     else wandb.run.summary["best_test_acc"]
 
-        print(f"Epoch [{epoch + 1}/{args.epochs}], Loss: {avg_loss:.4f}, Training Accuracy: {train_accuracy:.2f}%")
+        print(f"Epoch [{epoch + 1}/{args.epochs}], Validation Loss: {avg_val_loss:.4f}, Validation Accuracy: {average_accuracy_per_label:.4f}")
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     args = _parse_args()
     train(args)
