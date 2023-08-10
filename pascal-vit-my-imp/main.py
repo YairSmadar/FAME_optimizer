@@ -109,8 +109,7 @@ def _parse_args():
 
 
 def generate_wandb_name(args):
-    name = f"model-{args.model_type}"
-    name += f"_pretrain-on-imagenet"
+    name = f"model-{args.model_name}"
     name += f"_optim-{args.optimizer}"
     name += f"_dataset-{args.dataset}"
 
