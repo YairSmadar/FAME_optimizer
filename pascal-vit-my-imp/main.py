@@ -197,10 +197,14 @@ def train(args):
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # ImageNet stats
     ])
-
-    train_data = torchvision.datasets.VOCDetection(root=args.data_root, year='2012', image_set='train', download=False,
+    download_2012 = not os.path.exists(os.path.join('data', 'VOCdevkit', 'VOC2012'))
+    train_data = torchvision.datasets.VOCDetection(root=args.data_root, year='2012', image_set='train',
+                                                   download=download_2012,
                                                    transform=transform)
-    val_data = torchvision.datasets.VOCDetection(root=args.data_root, year='2007', image_set='test', download=False,
+
+    download_2007 = not os.path.exists(os.path.join('data', 'VOCdevkit', 'VOC2007'))
+    val_data = torchvision.datasets.VOCDetection(root=args.data_root, year='2007', image_set='test',
+                                                 download=download_2007,
                                                  transform=transform)
 
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=False,
