@@ -142,7 +142,6 @@ def deterministic_stratified_split(dataset, train_ratio=0.8):
 
 
 def collate_fn(batch):
-
     images, targets = zip(*batch)
 
     # Convert images into a single tensor
@@ -153,7 +152,9 @@ def collate_fn(batch):
 
 def target_transform(target):
     # Convert the annotations into a binary vector.
-    classes = ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor')
+    classes = (
+    'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
+    'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor')
     label = torch.zeros(len(classes))
     for obj in target['annotation']['object']:
         label[classes.index(obj['name'])] = 1
@@ -179,6 +180,13 @@ def calculate_metrics(logits, targets, threshold=0.5):
     exact_match_ratio = correct_samples / targets.size(0)
 
     return accuracy_per_label, exact_match_ratio
+
+
+def average_class_accuracy(predictions, targets):
+    # Compute accuracy for each class
+    class_accuracies = (predictions == targets).float().mean(dim=0)
+    # Average over all classes
+    return class_accuracies.mean().item() * 100  # Multiply by 100 to get percentage
 
 
 def train(args):
@@ -248,6 +256,8 @@ def train(args):
         total_loss = 0.0
         total_accuracy_per_label = 0
         total_exact_match_ratio = 0
+        total_class_accuracy = 0.0
+        num_batches = 0
 
         for images, targets in train_loader:
             optimizer.zero_grad()
@@ -267,17 +277,23 @@ def train(args):
             total_accuracy_per_label += accuracy_per_label
             total_exact_match_ratio += exact_match_ratio
 
+            predictions = (torch.sigmoid(outputs) > 0.5).float()
+            total_class_accuracy += average_class_accuracy(predictions, targets)
+            num_batches += 1
         avg_loss = total_loss / len(train_loader)
 
         average_accuracy_per_label = total_accuracy_per_label / len(train_loader)
         average_exact_match_ratio = total_exact_match_ratio / len(train_loader)
+        epoch_average_class_accuracy = total_class_accuracy / num_batches
 
         print(f"Epoch [{epoch + 1}/{args.epochs}], Train Loss: {avg_loss:.4f}, "
-              f"Train Accuracy: {average_exact_match_ratio.item():.4f}")
+              f"Train Accuracy: {epoch_average_class_accuracy:.4f}")
 
         val_loss = 0.0
         total_accuracy_per_label = 0
         total_exact_match_ratio = 0
+        total_class_accuracy = 0.0
+        num_batches = 0
 
         model.eval()  # set model to evaluation mode
         with torch.no_grad():
@@ -293,25 +309,30 @@ def train(args):
                 total_accuracy_per_label += accuracy_per_label
                 total_exact_match_ratio += exact_match_ratio
 
+                predictions = (torch.sigmoid(outputs) > 0.5).float()
+                total_class_accuracy += average_class_accuracy(predictions, targets)
+                num_batches += 1
+
         avg_val_loss = val_loss / len(val_loader)
         average_accuracy_per_label = total_accuracy_per_label / len(val_loader)
         average_exact_match_ratio = total_exact_match_ratio / len(val_loader)
         # print("Valid: Average per-label accuracy:", average_accuracy_per_label)
         # print("Valid: Average exact match ratio:", average_exact_match_ratio)
+        epoch_average_class_accuracy = total_class_accuracy / num_batches
 
         if args.use_wandb:
             wandb.log(
                 {
-                    "test_acc": average_exact_match_ratio.item(),
+                    "test_acc": epoch_average_class_accuracy,
                 }
             )
 
             wandb.run.summary["best_test_accuracy"] = \
-                average_exact_match_ratio.item() if average_exact_match_ratio.item() > wandb.run.summary["best_test_acc"] \
+                epoch_average_class_accuracy if epoch_average_class_accuracy > wandb.run.summary["best_test_acc"] \
                     else wandb.run.summary["best_test_acc"]
 
         print(f"Epoch [{epoch + 1}/{args.epochs}], Validation Loss: {avg_val_loss:.4f}, "
-              f"Validation Accuracy: {average_exact_match_ratio.item():.4f}")
+              f"Validation Accuracy: {epoch_average_class_accuracy:.4f}")
 
 
 if __name__ == "__main__":
