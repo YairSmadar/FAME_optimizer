@@ -246,7 +246,7 @@ def train(args):
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=args.batch_size, shuffle=False,
                                              collate_fn=collate_fn)
 
-    model = timm.create_model(args.model_name, pretrained=False, num_classes=20)  # 20 classes for Pascal VOC
+    model = timm.create_model(args.model_name, pretrained=True, num_classes=20)  # 20 classes for Pascal VOC
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
