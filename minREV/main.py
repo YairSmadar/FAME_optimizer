@@ -187,6 +187,9 @@ def generate_wandb_name(args):
         name += f"_b3-{args.beta3}"
         name += f"_b4-{args.beta4}"
 
+    name += f'_lr-{args.lr}'
+    name += f'_seed-{args.seed}'
+
     return name
 
 
