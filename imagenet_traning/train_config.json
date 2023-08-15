@@ -1,6 +1,6 @@
 {
   "arch": "resnet18",
-  "optimizer": "fame",
+  "optimizer": "adamw",
   "dataset": "cifar18",
   "beta3": 0.3,
   "beta4": 0.8,

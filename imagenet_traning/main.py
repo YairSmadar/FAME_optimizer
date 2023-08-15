@@ -246,6 +246,8 @@ def main_worker(gpu, ngpus_per_node, args):
                                     weight_decay=args.weight_decay)
     elif args.optimizer == "fame":
         optimizer = DAdam(model.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps)
+    elif args.optimizer == "adamw":
+        optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
     else:
         raise Exception(f"no {args.optimizer} optimizer")
     
