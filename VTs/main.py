@@ -4,12 +4,22 @@
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ze Liu
 # --------------------------------------------------------
-
+import json
 import os
+import sys
 import time
 import argparse
 import datetime
+from copy import copy
+
 import numpy as np
+from torchsummary import summary
+
+import wandb
+
+# Add the project's root directory to sys.path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(project_root)
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -18,13 +28,13 @@ import torch.distributed as dist
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from timm.utils import accuracy, AverageMeter
 
-from config import get_config
-from models import build_model
-from data.build import build_loader
-from lr_scheduler import build_scheduler
-from optimizer import build_optimizer
-from logger import create_logger
-from utils import (
+from VTs.config import get_config
+from VTs.models import build_model
+from VTs.data.build import build_loader
+from VTs.lr_scheduler import build_scheduler
+from VTs.optimizer import build_optimizer
+from VTs.logger import create_logger
+from VTs.utils import (
     load_checkpoint, 
     save_checkpoint, 
     save_checkpoint_best,
@@ -33,7 +43,8 @@ from utils import (
     reduce_tensor
 )
 
-from drloc import cal_selfsupervised_loss
+from VTs.drloc import cal_selfsupervised_loss
+
 
 try:
     # noinspection PyUnresolvedReferences
@@ -43,7 +54,7 @@ except ImportError:
 
 def parse_option():
     parser = argparse.ArgumentParser('Swin Transformer training and evaluation script', add_help=False)
-    parser.add_argument('--cfg', type=str, required=True, metavar="FILE", help='path to config file', )
+    parser.add_argument('--cfg', type=str, metavar="FILE", help='path to config file', )
     parser.add_argument(
         "--opts",
         help="Modify config options by adding 'KEY VALUE' pairs. ",
@@ -72,7 +83,7 @@ def parse_option():
     parser.add_argument('--throughput', action='store_true', help='Test throughput only')
 
     # distributed training
-    parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
+    parser.add_argument("--local_rank", type=int, help='local rank for DistributedDataParallel')
     parser.add_argument("--use_drloc", action='store_true', help="Use Dense Relative localization loss")
     parser.add_argument("--drloc_mode", type=str, default="l1", choices=["l1", "ce", "cbr"])
     parser.add_argument("--lambda_drloc", type=float, default=0.5, help="weight of Dense Relative localization loss")
@@ -87,12 +98,19 @@ def parse_option():
     parser.add_argument("--use_abs", action="store_true")
     parser.add_argument("--ssl_warmup_epochs", type=int, default=20)
     parser.add_argument("--total_epochs", type=int, default=300)
+    parser.add_argument('--distributed', action='store_true', default=False)
+    parser.add_argument("--use_wandb", action='store_true', default=False)
+    parser.add_argument("--model_name", type=str, default="vit")
+    parser.add_argument("--config_json", type=str, default="train_config.json")
 
     args, unparsed = parser.parse_known_args()
+
+    apply_config(args, args.config_json)
 
     config = get_config(args)
 
     return args, config
+
 
 def _weight_decay(init_weight, epoch, warmup_epochs=20, total_epoch=300):
     if epoch <= warmup_epochs:
@@ -101,13 +119,80 @@ def _weight_decay(init_weight, epoch, warmup_epochs=20, total_epoch=300):
         cur_weight = init_weight * (1.0 - (epoch - warmup_epochs)/(total_epoch - warmup_epochs))
     return cur_weight
 
+
+def apply_config(args: argparse.Namespace, config_path: str):
+    """Overwrite the values in an arguments object by values of namesake
+    keys in a JSON config file.
+
+    :param args: The arguments object
+    :param config_path: the path to a config JSON file.
+    """
+    config_path = copy(config_path)
+    if config_path:
+        # Opening JSON file
+        f = open(config_path)
+        config_overwrite = json.load(f)
+        for k, v in config_overwrite.items():
+            if k.startswith('_'):
+                continue
+            setattr(args, k, v)
+
+
+def generate_wandb_name(args):
+
+    model_name = args.model_name
+    wanda_test_name = model_name
+
+    data = args.dataset
+    wanda_test_name += f"_{data}"
+
+    wanda_test_name += f"_{args.method}"
+
+    if args.method in {'SGN', 'RGN'}:
+        wanda_test_name += f'_V{args.AGN_version}'
+
+        if args.use_VGN:
+            wanda_test_name += f'_use-VGN'
+            wanda_test_name += f'_gser-{args.VGN_gs_extra_range}'
+
+        wanda_test_name += f'_outliers_p-{args.outliers_p}'
+
+        if args.epoch_start_cluster != 0:
+            wanda_test_name += f'_epoch-start-cluster-{args.epoch_start_cluster}'
+
+        wanda_test_name += f'_every-{args.num_of_epch_to_shuffle}'
+
+        if args.max_norm_shuffle != 1000:
+            wanda_test_name += f'_max-{args.max_norm_shuffle}'
+
+    wanda_test_name += f'_bs-{args.batch_size}'
+
+    if args.group_by_size:
+        wanda_test_name += f'_gs-{args.group_norm_size}'
+    else:
+        wanda_test_name += f'_num-of-groups-{args.group_norm}'
+
+    wanda_test_name += f'_seed-{args.seed}'
+
+    return wanda_test_name
+
 def main():
-    _, config = parse_option()
+    args, config = parse_option()
+
+    wandb_name = generate_wandb_name(args)
+    if args.use_wandb:
+        wandb.init(project="FAME_optimizer",
+                   entity="the-smadars",
+                   name=wandb_name,
+                   config=args)
+        wandb.run.summary["best_test_accuracy"] = 0
+        wandb.run.summary["best_test_loss"] = 999
 
     if config.AMP_OPT_LEVEL != "O0":
         assert amp is not None, "amp not installed!"
 
-    if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
+    distributed_training = 'RANK' in os.environ and 'WORLD_SIZE' in os.environ
+    if distributed_training:
         rank = int(os.environ["RANK"])
         world_size = int(os.environ['WORLD_SIZE'])
         print(f"RANK and WORLD_SIZE in environ: {rank}/{world_size}")
@@ -139,34 +224,32 @@ def main():
     config.freeze()
 
     os.makedirs(config.OUTPUT, exist_ok=True)
-    logger = create_logger(output_dir=config.OUTPUT, dist_rank=dist.get_rank(), name=f"{config.MODEL.NAME}")
+    logger = create_logger(output_dir=config.OUTPUT, dist_rank=rank, name=f"{config.MODEL.NAME}")
 
-    if dist.get_rank() == 0:
+    if rank == 0:
         path = os.path.join(config.OUTPUT, "config.json")
         with open(path, "w") as f:
             f.write(config.dump())
         logger.info(f"Full config saved to {path}")
 
-    # print config
     logger.info(config.dump())
 
-
     dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config)
-    # dataset_train, data_loader_train, mixup_fn = build_loader(config)
 
-    logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
+    logger.info(f"Creating model: {config.MODEL.TYPE}/{config.MODEL.NAME}")
     model = build_model(config)
     model.cuda()
     logger.info(str(model))
 
+    summary(model, (3, 224, 224))
+
     optimizer = build_optimizer(config, model)
     if config.AMP_OPT_LEVEL != "O0":
         model, optimizer = amp.initialize(model, optimizer, opt_level=config.AMP_OPT_LEVEL)
-    model = torch.nn.parallel.DistributedDataParallel(model, 
-        device_ids=[config.LOCAL_RANK], 
-        broadcast_buffers=False,
-        find_unused_parameters=True)
-    model_without_ddp = model.module
+
+    if distributed_training:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.LOCAL_RANK], broadcast_buffers=False, find_unused_parameters=True)
+    model_without_ddp = model.module if distributed_training else model
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"number of params: {n_parameters}")
@@ -219,8 +302,9 @@ def main():
     start_time = time.time()
 
     init_lambda_drloc = 0.0
-    for epoch in range(config.TRAIN.START_EPOCH, 101): #config.TRAIN.EPOCHS):
-        data_loader_train.sampler.set_epoch(epoch)
+    for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
+        if distributed_training:
+            data_loader_train.sampler.set_epoch(epoch)
         
         if config.TRAIN.USE_DRLOC:
             init_lambda_drloc = _weight_decay(
@@ -243,10 +327,26 @@ def main():
             init_lambda_drloc
         )
 
-        if dist.get_rank() == 0 and (epoch % config.SAVE_FREQ == 0 or epoch == (config.TRAIN.EPOCHS - 1)):
-            save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
+        # if dist.get_rank() == 0 and (epoch % config.SAVE_FREQ == 0 or epoch == (config.TRAIN.EPOCHS - 1)):
+        #     save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
 
         acc1, acc5, loss = validate(config, data_loader_val, model, logger)
+
+        if args.use_wandb:
+            wandb.log({"test loss": loss,
+                       "test accuracy": acc1
+                       })
+
+            # save model
+            if acc1 > wandb.run.summary["best_test_accuracy"]:
+                torch.save(model.state_dict(), os.path.join('/home/yair/models/fame', wandb_name))
+
+            wandb.run.summary["best_test_accuracy"] = \
+                acc1 if acc1 > wandb.run.summary["best_test_accuracy"] \
+                    else wandb.run.summary["best_test_accuracy"]
+            wandb.run.summary["best_test_loss"] = \
+                loss if loss < wandb.run.summary["best_test_loss"] \
+                    else wandb.run.summary["best_test_loss"]
 
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
         #if dist.get_rank() == 0 and acc1 > max_accuracy:
@@ -282,7 +382,7 @@ def train_one_epoch(
 
     start = time.time()
     end = time.time()
-    device = torch.device('cuda', dist.get_rank())
+    # device = torch.device('cuda', dist.get_rank())
 
     end_time_tmp = time.time()
 
@@ -389,9 +489,10 @@ def validate(config, data_loader, model, logger):
         loss = criterion(output.sup, target)
         acc1, acc5 = accuracy(output.sup, target, topk=(1, 5))
 
-        acc1 = reduce_tensor(acc1)
-        acc5 = reduce_tensor(acc5)
-        loss = reduce_tensor(loss)
+        if config.DISTRIBUTED:
+            acc1 = reduce_tensor(acc1)
+            acc5 = reduce_tensor(acc5)
+            loss = reduce_tensor(loss)
 
         loss_meter.update(loss.item(), target.size(0))
         acc1_meter.update(acc1.item(), target.size(0))
