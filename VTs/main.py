@@ -121,7 +121,6 @@ def _weight_decay(init_weight, epoch, warmup_epochs=20, total_epoch=300):
     return cur_weight
 
 def set_seed(seed):
-    random.seed(seed)
     np.random.seed(seed)
     torch.random.manual_seed(seed)
     torch.manual_seed(seed)
