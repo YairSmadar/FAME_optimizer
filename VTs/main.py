@@ -149,8 +149,8 @@ def apply_config(args: argparse.Namespace, config_path: str):
 
 def generate_wandb_name(args):
     name = f"model-{args.model_name}"
-    name += f"_optim-{args.optimizer}"
     name += f"_dataset-{args.dataset}"
+    name += f"_optim-{args.optimizer}"
 
     if args.optimizer == 'fame':
         name += f"_b3-{args.beta3}"
@@ -189,7 +189,7 @@ def main():
         world_size = 1
     torch.cuda.set_device(config.LOCAL_RANK)
 
-    seed = config.SEED + dist.get_rank()
+    seed = config.SEED
     torch.manual_seed(seed)
     np.random.seed(seed)
     cudnn.benchmark = True
