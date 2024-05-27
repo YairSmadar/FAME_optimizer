@@ -1,8 +1,9 @@
 {
-    "optimizer": "adamw",
+    "optimizer": "adam",
     "use_VGN": false,
-    "beta3": 0.8,
-    "beta4": 0.3,
+    "beta3": 0.3,
+    "beta4": 0.7,
+    "eps": 1e-8,
     "dataset": "cifar-100",
     "model_name": "t2t",
     "use_wandb": true,

@@ -228,7 +228,7 @@ def main():
 
     summary(model, (3, 224, 224))
 
-    optimizer = build_optimizer(config, model)
+    optimizer = build_optimizer(config, model, args)
     if config.AMP_OPT_LEVEL != "O0":
         model, optimizer = amp.initialize(model, optimizer, opt_level=config.AMP_OPT_LEVEL)
 
