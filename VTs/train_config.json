@@ -25,7 +25,7 @@
     "_cfg": "./configs/cvt_13_224.yaml",
     "cfg": "./configs/t2tvit_14_224.yaml",
     "_cfg": "./configs/vit_base_16_224.yaml",
-    "data_path": "dataset/datasets/cifar-100",
+    "data_path": "/home/yair/Adaptive_Group_Normalization/VTs/dataset/datasets/cifar-100",
     "output": "dataset/swintransformer-expr/cifar-100-vit-sz224-drloc0.5-bs128-g8",
     "lambda_drloc": 0.5,
     "drloc_mode": "l1",
