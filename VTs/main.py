@@ -11,6 +11,7 @@ import time
 import argparse
 import datetime
 from copy import copy
+from random import random
 
 import numpy as np
 from torchsummary import summary
@@ -119,6 +120,14 @@ def _weight_decay(init_weight, epoch, warmup_epochs=20, total_epoch=300):
         cur_weight = init_weight * (1.0 - (epoch - warmup_epochs)/(total_epoch - warmup_epochs))
     return cur_weight
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.random.manual_seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 def apply_config(args: argparse.Namespace, config_path: str):
     """Overwrite the values in an arguments object by values of namesake
@@ -139,42 +148,18 @@ def apply_config(args: argparse.Namespace, config_path: str):
 
 
 def generate_wandb_name(args):
+    name = f"model-{args.model_name}"
+    name += f"_optim-{args.optimizer}"
+    name += f"_dataset-{args.dataset}"
 
-    model_name = args.model_name
-    wanda_test_name = model_name
+    if args.optimizer == 'fame':
+        name += f"_b3-{args.beta3}"
+        name += f"_b4-{args.beta4}"
 
-    data = args.dataset
-    wanda_test_name += f"_{data}"
+    name += f'_seed-{args.seed}'
 
-    wanda_test_name += f"_{args.method}"
+    return name
 
-    if args.method in {'SGN', 'RGN'}:
-        wanda_test_name += f'_V{args.AGN_version}'
-
-        if args.use_VGN:
-            wanda_test_name += f'_use-VGN'
-            wanda_test_name += f'_gser-{args.VGN_gs_extra_range}'
-
-        wanda_test_name += f'_outliers_p-{args.outliers_p}'
-
-        if args.epoch_start_cluster != 0:
-            wanda_test_name += f'_epoch-start-cluster-{args.epoch_start_cluster}'
-
-        wanda_test_name += f'_every-{args.num_of_epch_to_shuffle}'
-
-        if args.max_norm_shuffle != 1000:
-            wanda_test_name += f'_max-{args.max_norm_shuffle}'
-
-    wanda_test_name += f'_bs-{args.batch_size}'
-
-    if args.group_by_size:
-        wanda_test_name += f'_gs-{args.group_norm_size}'
-    else:
-        wanda_test_name += f'_num-of-groups-{args.group_norm}'
-
-    wanda_test_name += f'_seed-{args.seed}'
-
-    return wanda_test_name
 
 def main():
     args, config = parse_option()
@@ -207,7 +192,7 @@ def main():
     torch.manual_seed(seed)
     np.random.seed(seed)
     cudnn.benchmark = True
-
+    set_seed(seed)
     # linear scale the learning rate according to total batch size, may not be optimal
     linear_scaled_lr = config.TRAIN.BASE_LR * config.DATA.BATCH_SIZE * dist.get_world_size() / 512.0
     linear_scaled_warmup_lr = config.TRAIN.WARMUP_LR * config.DATA.BATCH_SIZE * dist.get_world_size() / 512.0
