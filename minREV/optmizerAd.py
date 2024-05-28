@@ -56,7 +56,7 @@ def Tema(
             # Use the max. for normalizing running avg. of gradient
             denom = (max_exp_avg_sqs[i].sqrt() / math.sqrt(bias_correction2)).add_(eps)
         else:
-            denom = (exp_avg_sq_2.sqrt() / math.sqrt(bias_correction2)).add_(eps)
+            denom = (exp_avg_sq.sqrt() / math.sqrt(bias_correction2)).add_(eps)
 
         step_size = lr / bias_correction1
         tema = (3 * exp_avg) - (3 * exp_avg_2) + exp_avg_3
