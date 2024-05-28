@@ -7,7 +7,7 @@
 
 from torch import optim as optim
 
-from minREV.optmizerAd import DAdam
+from minREV.optmizerAd import FAME
 
 
 def build_optimizer(config, model, args):
@@ -33,7 +33,8 @@ def build_optimizer(config, model, args):
         optimizer = optim.AdamW(parameters, eps=config.TRAIN.OPTIMIZER.EPS, betas=config.TRAIN.OPTIMIZER.BETAS,
                                 lr=config.TRAIN.BASE_LR, weight_decay=config.TRAIN.WEIGHT_DECAY)
     elif args.optimizer == "fame":
-        optimizer = DAdam(parameters, lr=config.TRAIN.BASE_LR, beta3=args.beta3, beta4=args.beta4, eps=args.eps,
+        optimizer = FAME(parameters, lr=config.TRAIN.BASE_LR, beta3=args.beta3, beta4=args.beta4,
+                          betas=config.TRAIN.OPTIMIZER.BETAS, eps=args.eps,
                           weight_decay=config.TRAIN.WEIGHT_DECAY)
     else:
         raise Exception(f"no {args.optimizer} optimizer")
