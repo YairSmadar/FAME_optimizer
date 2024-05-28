@@ -1,3 +1,4 @@
+
 from typing import List
 from torch import Tensor
 from torch.optim import Optimizer
@@ -62,69 +63,7 @@ def Tema(
         #tema_norm = tema /(1 - 0.9**step)
         param.addcdiv_(tema, denom,value=-step_size)
 
-def DEMA_v2(
-    params: List[Tensor],
-    grads: List[Tensor],
-    exp_avgs: List[Tensor],
-    exp_avgs_2: List[Tensor],
-    exp_avg_sqs: List[Tensor],
-    exp_avg_sqs_2: List[Tensor],
-    max_exp_avg_sqs: List[Tensor],
-    state_steps: List[int],
-    epoch: int,
-    *,
-    amsgrad: bool,
-    beta1: float,
-    beta2: float,
-    lr: float,
-    weight_decay: float,
-    eps: float,
-):
-
-    for i, param in enumerate(params):
-
-        grad = grads[i]
-        exp_avg = exp_avgs[i]
-        exp_avg_2 = exp_avgs_2[i]
-        # exp_avg_3 = exp_avgs_3[i]
-        exp_avg_sq = exp_avg_sqs[i]
-        exp_avg_sq_2 = exp_avg_sqs_2[i]
-        step = state_steps[i]
-
-        bias_correction1 = 1 - beta1 ** step
-        bias_correction2 = 1 - beta2 ** step
-
-        if weight_decay != 0:
-            grad = grad.add(param, alpha=weight_decay)
-
-        # Decay the first and second moment running average coefficient
-        exp_avg.mul_(beta1).add_(grad, alpha= 1 - (beta1))
-        exp_avg_2.mul_(0.4).add_(exp_avg, alpha=0.6)
-
-        dema = 2*exp_avg - exp_avg_2
-
-        exp_avg_sq.mul_(beta2).addcmul_(grad, grad.conj(), value=1 - beta2)
-        # exp_avg_sq_2.mul_(beta2).addcmul_(exp_avg_sq, grad.conj(), value=1 - beta2)
-
-        # print(type(exp_avg_sqs_2),type(exp_avg_sqs))
-        # print(type(exp_avg_2),type(exp_avg))
-        # t = exp_avg_sq - exp_avg_sqs_2
-
-        if amsgrad:
-            # Maintains the maximum of all 2nd moment running avg. till now
-            torch.maximum(max_exp_avg_sqs[i], exp_avg_sq, out=max_exp_avg_sqs[i])
-            # Use the max. for normalizing running avg. of gradient
-            denom = (max_exp_avg_sqs[i].sqrt() / math.sqrt(bias_correction2)).add_(eps)
-        else:
-            denom = (exp_avg_sq_2.sqrt() / math.sqrt(bias_correction2)).add_(eps)
-
-        step_size = lr / bias_correction1
-        lemda_1, lemda_2 = 0.5, 0.5
-        dema = dema 
-        param.addcdiv_(dema, denom,value=-step_size)
-
-class DAdam(Optimizer):
-    # adam using DEMA decay
+class FAME(Optimizer):
     def __init__(
         self,
         params,
@@ -150,10 +89,10 @@ class DAdam(Optimizer):
         defaults = dict(
             lr=lr, betas=betas, beta3=beta3, beta4=beta4, eps=eps, weight_decay=weight_decay, amsgrad=amsgrad
         )
-        super(DAdam, self).__init__(params, defaults)
+        super(FAME, self).__init__(params, defaults)
 
     def __setstate__(self, state):
-        super(DAdam, self).__setstate__(state)
+        super(FAME, self).__setstate__(state)
         for group in self.param_groups:
             group.setdefault("amsgrad", False)
 
