@@ -35,7 +35,7 @@ def build_optimizer(config, model, args):
     elif args.optimizer == "fame":
         optimizer = FAME(parameters, lr=config.TRAIN.BASE_LR, beta3=args.beta3, beta4=args.beta4,
                           betas=config.TRAIN.OPTIMIZER.BETAS, eps=args.eps,
-                          weight_decay=config.TRAIN.WEIGHT_DECAY)
+                         )#weight_decay=config.TRAIN.WEIGHT_DECAY)
     else:
         raise Exception(f"no {args.optimizer} optimizer")
 
