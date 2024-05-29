@@ -202,7 +202,7 @@ def main():
     linear_scaled_min_lr = config.TRAIN.MIN_LR * effective_batch_size / 512.0
 
     config.defrost()
-    config.TRAIN.BASE_LR = linear_scaled_lr * 10
+    config.TRAIN.BASE_LR = linear_scaled_lr
     config.TRAIN.WARMUP_LR = linear_scaled_warmup_lr
     config.TRAIN.MIN_LR = linear_scaled_min_lr
     config.freeze()

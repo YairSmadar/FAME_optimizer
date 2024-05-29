@@ -8,7 +8,7 @@
     "use_wandb": true,
     "seed": 0,
     "epochs": 300,
-    "batch_size": 128,
+    "batch_size": 64,
     "num_classes": 100,
     "_cfg": "./configs/swin_tiny_patch4_window7_224.yaml",
     "_cfg": "./configs/cvt_13_224.yaml",
