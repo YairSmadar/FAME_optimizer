@@ -28,10 +28,10 @@ def build_optimizer(config, model, args):
         optimizer = optim.Adam(parameters, lr=config.TRAIN.BASE_LR)
     elif args.optimizer == 'sgd':
         optimizer = optim.SGD(parameters, momentum=config.TRAIN.OPTIMIZER.MOMENTUM, nesterov=True,
-                              lr=config.TRAIN.BASE_LR, weight_decay=config.TRAIN.WEIGHT_DECAY)
+                              lr=config.TRAIN.BASE_LR ) #, weight_decay=config.TRAIN.WEIGHT_DECAY)
     elif args.optimizer == 'adamw':
         optimizer = optim.AdamW(parameters, eps=config.TRAIN.OPTIMIZER.EPS, betas=config.TRAIN.OPTIMIZER.BETAS,
-                                lr=config.TRAIN.BASE_LR, weight_decay=config.TRAIN.WEIGHT_DECAY)
+                                lr=config.TRAIN.BASE_LR) #, weight_decay=config.TRAIN.WEIGHT_DECAY)
     elif args.optimizer == "fame":
         optimizer = FAME(parameters, lr=config.TRAIN.BASE_LR, beta3=args.beta3, beta4=args.beta4,
                           betas=config.TRAIN.OPTIMIZER.BETAS, eps=args.eps,
