@@ -193,15 +193,14 @@ def main():
     np.random.seed(seed)
     cudnn.benchmark = True
     set_seed(seed)
-    # linear scale the learning rate according to total batch size, may not be optimal
-    linear_scaled_lr = config.TRAIN.BASE_LR * config.DATA.BATCH_SIZE * world_size / 512.0
-    linear_scaled_warmup_lr = config.TRAIN.WARMUP_LR * config.DATA.BATCH_SIZE * world_size / 512.0
-    linear_scaled_min_lr = config.TRAIN.MIN_LR * config.DATA.BATCH_SIZE * world_size / 512.0
-    # gradient accumulation also need to scale the learning rate
-    if config.TRAIN.ACCUMULATION_STEPS > 1:
-        linear_scaled_lr = linear_scaled_lr * config.TRAIN.ACCUMULATION_STEPS
-        linear_scaled_warmup_lr = linear_scaled_warmup_lr * config.TRAIN.ACCUMULATION_STEPS
-        linear_scaled_min_lr = linear_scaled_min_lr * config.TRAIN.ACCUMULATION_STEPS
+
+    # Adjust learning rate based on the number of GPUs
+    effective_batch_size = config.DATA.BATCH_SIZE * world_size * (
+        config.TRAIN.ACCUMULATION_STEPS if config.TRAIN.ACCUMULATION_STEPS > 1 else 1)
+    linear_scaled_lr = config.TRAIN.BASE_LR * effective_batch_size / 512.0
+    linear_scaled_warmup_lr = config.TRAIN.WARMUP_LR * effective_batch_size / 512.0
+    linear_scaled_min_lr = config.TRAIN.MIN_LR * effective_batch_size / 512.0
+
     config.defrost()
     config.TRAIN.BASE_LR = linear_scaled_lr
     config.TRAIN.WARMUP_LR = linear_scaled_warmup_lr
