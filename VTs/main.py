@@ -203,7 +203,7 @@ def main():
 
     config.defrost()
 
-    lr_mul = 10 if args.optimizer == 'sgd' else 1
+    lr_mul = 100 if args.optimizer == 'sgd' else 1
     config.TRAIN.BASE_LR = linear_scaled_lr * lr_mul
     config.TRAIN.WARMUP_LR = linear_scaled_warmup_lr * lr_mul
     config.TRAIN.MIN_LR = linear_scaled_min_lr * lr_mul
