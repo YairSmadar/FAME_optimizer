@@ -52,7 +52,7 @@ CUDNN:
 DATASET:
   DATASET: 'imagenet'
   DATA_FORMAT: 'jpg'
-  ROOT: '/dev/shm/data/imagenet1k$'
+  ROOT: '/dev/shm/data/imagenet1k/'
   TEST_SET: 'val'
   TRAIN_SET: 'train'
 TEST:
