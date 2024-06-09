@@ -11,6 +11,6 @@
     "epochs": 300,
     "batch_size": 64,
     "num_classes": 1000,
-    "cfg": "/home/yair/FAME_optimizer/CvT/experiments/imagenet/cvt/cvt-13-384x384.yaml",
+    "cfg": "/home/yair/FAME_optimizer/CvT/experiments/imagenet/cvt/cvt-13-224x224.yaml",
     "distributed": false
 }
