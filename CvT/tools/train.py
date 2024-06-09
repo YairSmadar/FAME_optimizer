@@ -11,9 +11,11 @@ import sys
 import time
 from copy import copy
 
+import numpy as np
 import torch
 import torch.nn.parallel
 import torch.optim
+import wandb
 from torch.utils.collect_env import get_pretty_env_info
 
 # Assuming the 'CvT' directory is in the parent directory of the current script
@@ -81,12 +83,44 @@ def apply_config(args: argparse.Namespace, config_path: str):
             setattr(args, k, v)
 
 
+def set_seed(seed):
+    np.random.seed(seed)
+    torch.random.manual_seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+def generate_wandb_name(args):
+    name = f"model-{args.model_name}"
+    name += f"_dataset-{args.dataset}"
+    name += f"_optim-{args.optimizer}"
+
+    if args.optimizer == 'fame':
+        name += f"_b3-{args.beta3}"
+        name += f"_b4-{args.beta4}"
+
+    name += f'_seed-{args.seed}'
+
+    return name
+
 def main():
     args = parse_args()
     apply_config(args, args.config_json)
 
+    set_seed(args.seed)
     init_distributed(args)
     setup_cudnn(config)
+
+    wandb_name = generate_wandb_name(args)
+    if args.use_wandb:
+        wandb.init(project="FAME_optimizer",
+                   entity="the-smadars",
+                   name=wandb_name,
+                   config=args)
+        wandb.run.summary["best_test_accuracy"] = 0
+        wandb.run.summary["best_test_loss"] = 999
 
     update_config(config, args)
     final_output_dir = create_logger(config, args.cfg, 'train')
@@ -171,7 +205,7 @@ def main():
             perf = test(
                 config, valid_loader, model, criterion_eval,
                 final_output_dir, tb_log_dir,
-                args.distributed
+                args.distributed, args, wandb_name
             )
 
             best_model = (perf > best_perf)

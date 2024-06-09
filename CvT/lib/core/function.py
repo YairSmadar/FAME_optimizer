@@ -3,8 +3,10 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
+import os
 import time
 import torch
+import wandb
 
 from timm.data import Mixup
 from torch.cuda.amp import autocast
@@ -110,7 +112,7 @@ def train_one_epoch(config, train_loader, model, criterion, optimizer, epoch,
 
 @torch.no_grad()
 def test(config, val_loader, model, criterion, output_dir, tb_log_dir , distributed=False, real_labels=None,
-         valid_labels=None):
+         valid_labels=None, args=None, wandb_name="NO_NAME"):
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
@@ -179,6 +181,22 @@ def test(config, val_loader, model, criterion, output_dir, tb_log_dir , distribu
                 error5=100-top5_acc
             )
         logging.info(msg)
+
+    if args.use_wandb:
+        wandb.log({"test loss": loss_avg,
+                   "test accuracy": top1_acc
+                   })
+
+        # save model
+        if top1_acc > wandb.run.summary["best_test_accuracy"]:
+            torch.save(model.state_dict(), os.path.join('/home/yair/models/fame', wandb_name))
+
+        wandb.run.summary["best_test_accuracy"] = \
+            top1_acc if top1_acc > wandb.run.summary["best_test_accuracy"] \
+                else wandb.run.summary["best_test_accuracy"]
+        wandb.run.summary["best_test_loss"] = \
+            loss_avg if loss_avg < wandb.run.summary["best_test_loss"] \
+                else wandb.run.summary["best_test_loss"]
 
     # if writer_dict and comm.is_main_process():
     #     writer = writer_dict['writer']
