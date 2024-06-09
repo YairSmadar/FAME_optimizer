@@ -1,5 +1,5 @@
 {
-    "optimizer": "fame",
+    "optimizer": "adam",
     "beta3": 0.3,
     "beta4": 0.7,
     "eps": 1e-5,
