@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import pprint
+import sys
 import time
 from copy import copy
 
@@ -14,6 +15,9 @@ import torch
 import torch.nn.parallel
 import torch.optim
 from torch.utils.collect_env import get_pretty_env_info
+
+# Assuming the 'CvT' directory is in the parent directory of the current script
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import _init_paths
 from CvT.lib.config import config
