@@ -7,6 +7,8 @@ import torch.optim as optim
 
 from timm.optim import create_optimizer
 
+from minREV.optmizerAd import FAME
+
 
 def _is_depthwise(m):
     return (
@@ -107,49 +109,53 @@ def set_wd(cfg, model):
     return params
 
 
-def build_optimizer(cfg, model):
-    if cfg.TRAIN.OPTIMIZER == 'timm':
-        args = cfg.TRAIN.OPTIMIZER_ARGS
-
-        print(f'=> usage timm optimizer args: {cfg.TRAIN.OPTIMIZER_ARGS}')
-        optimizer = create_optimizer(args, model)
-
-        return optimizer
+def build_optimizer(cfg, model, args):
+    # if cfg.TRAIN.OPTIMIZER == 'timm':
+    #     args = cfg.TRAIN.OPTIMIZER_ARGS
+    #
+    #     print(f'=> usage timm optimizer args: {cfg.TRAIN.OPTIMIZER_ARGS}')
+    #     optimizer = create_optimizer(args, model)
+    #
+    #     return optimizer
 
     optimizer = None
     params = set_wd(cfg, model)
-    if cfg.TRAIN.OPTIMIZER == 'sgd':
+    if args == 'sgd':
         optimizer = optim.SGD(
             params,
             # filter(lambda p: p.requires_grad, model.parameters()),
-            lr=cfg.TRAIN.LR,
+            lr=args.lr,
             momentum=cfg.TRAIN.MOMENTUM,
             weight_decay=cfg.TRAIN.WD,
             nesterov=cfg.TRAIN.NESTEROV
         )
-    elif cfg.TRAIN.OPTIMIZER == 'adam':
+    elif args == 'adam':
         optimizer = optim.Adam(
             params,
             # filter(lambda p: p.requires_grad, model.parameters()),
-            lr=cfg.TRAIN.LR,
+            lr=args.lr,
             weight_decay=cfg.TRAIN.WD,
         )
-    elif cfg.TRAIN.OPTIMIZER == 'adamW':
+    elif args == 'adamW':
         optimizer = optim.AdamW(
             params,
-            lr=cfg.TRAIN.LR,
+            lr=args.lr,
             weight_decay=cfg.TRAIN.WD,
         )
-    elif cfg.TRAIN.OPTIMIZER == 'rmsprop':
+    elif args == 'rmsprop':
         optimizer = optim.RMSprop(
             params,
             # filter(lambda p: p.requires_grad, model.parameters()),
-            lr=cfg.TRAIN.LR,
+            lr=args.lr,
             momentum=cfg.TRAIN.MOMENTUM,
             weight_decay=cfg.TRAIN.WD,
             alpha=cfg.TRAIN.RMSPROP_ALPHA,
             centered=cfg.TRAIN.RMSPROP_CENTERED
         )
+
+    elif args == 'fame':
+        optimizer = FAME(params, lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps,
+                         )#weight_decay=config.TRAIN.WEIGHT_DECAY)
 
     return optimizer
 

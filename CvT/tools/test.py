@@ -13,22 +13,21 @@ import torch
 import torch.nn.parallel
 import torch.optim
 from torch.utils.collect_env import get_pretty_env_info
-from tensorboardX import SummaryWriter
 
 import _init_paths
-from config import config
-from config import update_config
-from core.function import test
-from core.loss import build_criterion
-from dataset import build_dataloader
-from dataset import RealLabelsImagenet
-from models import build_model
-from utils.comm import comm
-from utils.utils import create_logger
-from utils.utils import init_distributed
-from utils.utils import setup_cudnn
-from utils.utils import summary_model_on_master
-from utils.utils import strip_prefix_if_present
+from CvT.lib.config import config
+from CvT.lib.config import update_config
+from CvT.lib.core.function import test
+from CvT.lib.core.loss import build_criterion
+from CvT.lib.dataset import build_dataloader
+from CvT.lib.dataset import RealLabelsImagenet
+from CvT.lib.models import build_model
+from CvT.lib.utils.comm import comm
+from CvT.lib.utils.utils import create_logger
+from CvT.lib.utils.utils import init_distributed
+from CvT.lib.utils.utils import setup_cudnn
+from CvT.lib.utils.utils import summary_model_on_master
+from CvT.lib.utils.utils import strip_prefix_if_present
 
 
 def parse_args():
@@ -88,12 +87,11 @@ def main():
 
     model.load_state_dict(state_dict, strict=False)
     model.to(torch.device('cuda'))
-
-    writer_dict = {
-        'writer': SummaryWriter(logdir=tb_log_dir),
-        'train_global_steps': 0,
-        'valid_global_steps': 0,
-    }
+    #
+    # writer_dict = {
+    #     'train_global_steps': 0,
+    #     'valid_global_steps': 0,
+    # }
 
     summary_model_on_master(model, config, final_output_dir, False)
 
@@ -106,7 +104,7 @@ def main():
     criterion = build_criterion(config, train=False)
     criterion.cuda()
 
-    valid_loader = build_dataloader(config, False, args.distributed)
+    valid_loader = build_dataloader(config, False, args.distributed, args)
     real_labels = None
     if (
         config.DATASET.DATASET == 'imagenet'
@@ -131,12 +129,11 @@ def main():
     logging.info('=> start testing')
     start = time.time()
     test(config, valid_loader, model, criterion,
-         final_output_dir, tb_log_dir, writer_dict,
+         final_output_dir, tb_log_dir,
          args.distributed, real_labels=real_labels,
          valid_labels=valid_labels)
     logging.info('=> test duration time: {:.2f}s'.format(time.time()-start))
 
-    writer_dict['writer'].close()
     logging.info('=> finish testing')
 
 

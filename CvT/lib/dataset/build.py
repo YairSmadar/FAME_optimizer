@@ -13,11 +13,14 @@ import torchvision.datasets as datasets
 from .transformas import build_transforms
 from .samplers import RASampler
 
+import torchvision.transforms as tr
 
-def build_dataset(cfg, is_train):
+
+
+def build_dataset(cfg, is_train, args):
     dataset = None
     if 'imagenet' in cfg.DATASET.DATASET:
-        dataset = _build_imagenet_dataset(cfg, is_train)
+        dataset = _build_imagenet_dataset(cfg, is_train, args)
     else:
         raise ValueError('Unkown dataset: {}'.format(cfg.DATASET.DATASET))
     return dataset
@@ -38,18 +41,24 @@ def _build_image_folder_dataset(cfg, is_train):
     return dataset
 
 
-def _build_imagenet_dataset(cfg, is_train):
+def _build_imagenet_dataset(cfg, is_train, args):
     transforms = build_transforms(cfg, is_train)
 
     dataset_name = cfg.DATASET.TRAIN_SET if is_train else cfg.DATASET.TEST_SET
-    dataset = datasets.ImageFolder(
-        os.path.join(cfg.DATASET.ROOT, dataset_name), transforms
-    )
+
+    if args.dummy:
+        print("=> Dummy data is used!")
+        dataset = datasets.FakeData(1281167, (3, 224, 224), 1000, tr.ToTensor()) if is_train else \
+            datasets.FakeData(50000, (3, 224, 224), 1000, tr.ToTensor())
+    else:
+        dataset = datasets.ImageFolder(
+            os.path.join(cfg.DATASET.ROOT, dataset_name), transforms
+        )
 
     return dataset
 
 
-def build_dataloader(cfg, is_train=True, distributed=False):
+def build_dataloader(cfg, is_train=True, distributed=False, args=None):
     if is_train:
         batch_size_per_gpu = cfg.TRAIN.BATCH_SIZE_PER_GPU
         shuffle = True
@@ -57,7 +66,7 @@ def build_dataloader(cfg, is_train=True, distributed=False):
         batch_size_per_gpu = cfg.TEST.BATCH_SIZE_PER_GPU
         shuffle = False
 
-    dataset = build_dataset(cfg, is_train)
+    dataset = build_dataset(cfg, is_train, args)
 
     if distributed:
         if is_train and cfg.DATASET.SAMPLER == 'repeated_aug':

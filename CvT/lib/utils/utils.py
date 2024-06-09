@@ -10,11 +10,10 @@ import logging
 import shutil
 import time
 
-import tensorwatch as tw
 import torch
 import torch.backends.cudnn as cudnn
 
-from utils.comm import comm
+from CvT.lib.utils.comm import comm
 from ptflops import get_model_complexity_info
 
 
@@ -93,36 +92,36 @@ def summary_model_on_master(model, config, output_dir, copy):
         except Exception:
             logging.error('=> error when counting parameters')
 
-        if config.MODEL_SUMMARY:
-            try:
-                logging.info('== model_stats by tensorwatch ==')
-                df = tw.model_stats(
-                    model,
-                    (1, 3, config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0])
-                )
-                df.to_html(os.path.join(output_dir, 'model_summary.html'))
-                df.to_csv(os.path.join(output_dir, 'model_summary.csv'))
-                msg = '*'*20 + ' Model summary ' + '*'*20
-                logging.info(
-                    '\n{msg}\n{summary}\n{msg}'.format(
-                        msg=msg, summary=df.iloc[-1]
-                    )
-                )
-                logging.info('== model_stats by tensorwatch ==')
-            except Exception:
-                logging.error('=> error when run model_stats')
-
-            try:
-                logging.info('== get_model_complexity_info by ptflops ==')
-                macs, params = get_model_complexity_info(
-                    model,
-                    (3, config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0]),
-                    as_strings=True, print_per_layer_stat=True, verbose=True
-                )
-                logging.info(f'=> FLOPs: {macs:<8}, params: {params:<8}')
-                logging.info('== get_model_complexity_info by ptflops ==')
-            except Exception:
-                logging.error('=> error when run get_model_complexity_info')
+        # if config.MODEL_SUMMARY:
+        #     try:
+        #         logging.info('== model_stats by tensorwatch ==')
+        #         df = tw.model_stats(
+        #             model,
+        #             (1, 3, config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0])
+        #         )
+        #         df.to_html(os.path.join(output_dir, 'model_summary.html'))
+        #         df.to_csv(os.path.join(output_dir, 'model_summary.csv'))
+        #         msg = '*'*20 + ' Model summary ' + '*'*20
+        #         logging.info(
+        #             '\n{msg}\n{summary}\n{msg}'.format(
+        #                 msg=msg, summary=df.iloc[-1]
+        #             )
+        #         )
+        #         logging.info('== model_stats by tensorwatch ==')
+        #     except Exception:
+        #         logging.error('=> error when run model_stats')
+        #
+        #     try:
+        #         logging.info('== get_model_complexity_info by ptflops ==')
+        #         macs, params = get_model_complexity_info(
+        #             model,
+        #             (3, config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0]),
+        #             as_strings=True, print_per_layer_stat=True, verbose=True
+        #         )
+        #         logging.info(f'=> FLOPs: {macs:<8}, params: {params:<8}')
+        #         logging.info('== get_model_complexity_info by ptflops ==')
+        #     except Exception:
+        #         logging.error('=> error when run get_model_complexity_info')
 
 
 def resume_checkpoint(model,

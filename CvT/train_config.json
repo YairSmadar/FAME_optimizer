@@ -1,0 +1,16 @@
+{
+    "optimizer": "fame",
+    "beta3": 0.3,
+    "beta4": 0.7,
+    "eps": 1e-5,
+    "dataset": "imagenet1k",
+    "dummy": true,
+    "use_wandb": true,
+    "seed": 0,
+    "epochs": 300,
+    "batch_size": 64,
+    "num_classes": 1000,
+    "cfg": "../experiments/imagenet/cvt/cvt-13-384x384.yaml",
+    "data_path": "/home/yair/Adaptive_Group_Normalization/VTs/dataset/datasets/cifar-100",
+    "distributed": false
+}

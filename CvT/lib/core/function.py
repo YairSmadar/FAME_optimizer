@@ -14,7 +14,7 @@ from utils.comm import comm
 
 
 def train_one_epoch(config, train_loader, model, criterion, optimizer, epoch,
-                    output_dir, tb_log_dir, writer_dict, scaler=None):
+                    output_dir, tb_log_dir, scaler=None):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -100,17 +100,16 @@ def train_one_epoch(config, train_loader, model, criterion, optimizer, epoch,
 
         torch.cuda.synchronize()
 
-    if writer_dict and comm.is_main_process():
-        writer = writer_dict['writer']
-        global_steps = writer_dict['train_global_steps']
-        writer.add_scalar('train_loss', losses.avg, global_steps)
-        writer.add_scalar('train_top1', top1.avg, global_steps)
-        writer_dict['train_global_steps'] = global_steps + 1
+    # if writer_dict and comm.is_main_process():
+    #     writer = writer_dict['writer']
+    #     global_steps = writer_dict['train_global_steps']
+    #     writer.add_scalar('train_loss', losses.avg, global_steps)
+    #     writer.add_scalar('train_top1', top1.avg, global_steps)
+    #     writer_dict['train_global_steps'] = global_steps + 1
 
 
 @torch.no_grad()
-def test(config, val_loader, model, criterion, output_dir, tb_log_dir,
-         writer_dict=None, distributed=False, real_labels=None,
+def test(config, val_loader, model, criterion, output_dir, tb_log_dir , distributed=False, real_labels=None,
          valid_labels=None):
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -181,12 +180,12 @@ def test(config, val_loader, model, criterion, output_dir, tb_log_dir,
             )
         logging.info(msg)
 
-    if writer_dict and comm.is_main_process():
-        writer = writer_dict['writer']
-        global_steps = writer_dict['valid_global_steps']
-        writer.add_scalar('valid_loss', loss_avg, global_steps)
-        writer.add_scalar('valid_top1', top1_acc, global_steps)
-        writer_dict['valid_global_steps'] = global_steps + 1
+    # if writer_dict and comm.is_main_process():
+    #     writer = writer_dict['writer']
+    #     global_steps = writer_dict['valid_global_steps']
+    #     writer.add_scalar('valid_loss', loss_avg, global_steps)
+    #     writer.add_scalar('valid_top1', top1_acc, global_steps)
+    #     writer_dict['valid_global_steps'] = global_steps + 1
 
     logging.info('=> switch to train mode')
     model.train()

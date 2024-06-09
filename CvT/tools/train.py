@@ -3,35 +3,36 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import json
 import logging
 import os
 import pprint
 import time
+from copy import copy
 
 import torch
 import torch.nn.parallel
 import torch.optim
 from torch.utils.collect_env import get_pretty_env_info
-from tensorboardX import SummaryWriter
 
 import _init_paths
-from config import config
-from config import update_config
-from config import save_config
-from core.loss import build_criterion
-from core.function import train_one_epoch, test
-from dataset import build_dataloader
-from models import build_model
-from optim import build_optimizer
-from scheduler import build_lr_scheduler
-from utils.comm import comm
-from utils.utils import create_logger
-from utils.utils import init_distributed
-from utils.utils import setup_cudnn
-from utils.utils import summary_model_on_master
-from utils.utils import resume_checkpoint
-from utils.utils import save_checkpoint_on_master
-from utils.utils import save_model_on_master
+from CvT.lib.config import config
+from CvT.lib.config import update_config
+from CvT.lib.config import save_config
+from CvT.lib.core.loss import build_criterion
+from CvT.lib.core.function import train_one_epoch, test
+from CvT.lib.dataset import build_dataloader
+from CvT.lib.models import build_model
+from CvT.lib.optim import build_optimizer
+from CvT.lib.scheduler import build_lr_scheduler
+from CvT.lib.utils.comm import comm
+from CvT.lib.utils.utils import create_logger
+from CvT.lib.utils.utils import init_distributed
+from CvT.lib.utils.utils import setup_cudnn
+from CvT.lib.utils.utils import summary_model_on_master
+from CvT.lib.utils.utils import resume_checkpoint
+from CvT.lib.utils.utils import save_checkpoint_on_master
+from CvT.lib.utils.utils import save_model_on_master
 
 
 def parse_args():
@@ -40,25 +41,45 @@ def parse_args():
 
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        required=True,
+                        required=False,
                         type=str)
 
     # distributed training
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument("--port", type=int, default=9000)
+    parser.add_argument("--optimizer", type=str, default="sgd")
+
 
     parser.add_argument('opts',
                         help="Modify config options using the command-line",
                         default=None,
                         nargs=argparse.REMAINDER)
-
+    parser.add_argument('--config_json', type=str)
     args = parser.parse_args()
 
     return args
 
+def apply_config(args: argparse.Namespace, config_path: str):
+    """Overwrite the values in an arguments object by values of namesake
+    keys in a JSON config file.
+
+    :param args: The arguments object
+    :param config_path: the path to a config JSON file.
+    """
+    config_path = copy(config_path)
+    if config_path:
+        # Opening JSON file
+        f = open(config_path)
+        config_overwrite = json.load(f)
+        for k, v in config_overwrite.items():
+            if k.startswith('_'):
+                continue
+            setattr(args, k, v)
+
 
 def main():
     args = parse_args()
+    apply_config(args, args.config_json)
 
     init_distributed(args)
     setup_cudnn(config)
@@ -67,19 +88,20 @@ def main():
     final_output_dir = create_logger(config, args.cfg, 'train')
     tb_log_dir = final_output_dir
 
-    if comm.is_main_process():
-        logging.info("=> collecting env info (might take some time)")
-        logging.info("\n" + get_pretty_env_info())
-        logging.info(pprint.pformat(args))
-        logging.info(config)
-        logging.info("=> using {} GPUs".format(args.num_gpus))
+    # if comm.is_main_process():
+        # logging.info("=> collecting env info (might take some time)")
+        # logging.info("\n" + get_pretty_env_info())
+        # logging.info(pprint.pformat(args))
+        # logging.info(config)
+        # logging.info("=> using {} GPUs".format(args.num_gpus))
 
-        output_config_path = os.path.join(final_output_dir, 'config.yaml')
-        logging.info("=> saving config into: {}".format(output_config_path))
-        save_config(config, output_config_path)
+    output_config_path = os.path.join(final_output_dir, 'config.yaml')
+    logging.info("=> saving config into: {}".format(output_config_path))
+    save_config(config, output_config_path)
 
     model = build_model(config)
-    model.to(torch.device('cuda'))
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
 
     # copy model file
     summary_model_on_master(model, config, final_output_dir, True)
@@ -88,23 +110,18 @@ def main():
         logging.info('=> convert memory format to nhwc')
         model.to(memory_format=torch.channels_last)
 
-    writer_dict = {
-        'writer': SummaryWriter(logdir=tb_log_dir),
-        'train_global_steps': 0,
-        'valid_global_steps': 0,
-    }
 
     best_perf = 0.0
     best_model = True
     begin_epoch = config.TRAIN.BEGIN_EPOCH
-    optimizer = build_optimizer(config, model)
+    optimizer = build_optimizer(config, model, args)
 
     best_perf, begin_epoch = resume_checkpoint(
         model, optimizer, config, final_output_dir, True
     )
 
-    train_loader = build_dataloader(config, True, args.distributed)
-    valid_loader = build_dataloader(config, False, args.distributed)
+    train_loader = build_dataloader(config, True, args.distributed, args)
+    valid_loader = build_dataloader(config, False, args.distributed, args)
 
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(
@@ -135,7 +152,7 @@ def main():
         logging.info('=> {} train start'.format(head))
         with torch.autograd.set_detect_anomaly(config.TRAIN.DETECT_ANOMALY):
             train_one_epoch(config, train_loader, model, criterion, optimizer,
-                            epoch, final_output_dir, tb_log_dir, writer_dict,
+                            epoch, final_output_dir, tb_log_dir,
                             scaler=scaler)
         logging.info(
             '=> {} train end, duration: {:.2f}s'
@@ -149,7 +166,7 @@ def main():
         if epoch >= config.TRAIN.EVAL_BEGIN_EPOCH:
             perf = test(
                 config, valid_loader, model, criterion_eval,
-                final_output_dir, tb_log_dir, writer_dict,
+                final_output_dir, tb_log_dir,
                 args.distributed
             )
 
@@ -203,7 +220,6 @@ def main():
              args.distributed, final_output_dir, 'swa_state.pth'
         )
 
-    writer_dict['writer'].close()
     logging.info('=> finish training')
 
 
