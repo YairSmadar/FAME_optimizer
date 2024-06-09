@@ -65,6 +65,13 @@ def build_dataloader(cfg, is_train=True, distributed=False, args=None):
     else:
         batch_size_per_gpu = cfg.TEST.BATCH_SIZE_PER_GPU
         shuffle = False
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    print("")
+
+    print(f"Batch size = {batch_size_per_gpu}")
+    print("")
+
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
     dataset = build_dataset(cfg, is_train, args)
 
