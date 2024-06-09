@@ -11,6 +11,5 @@
     "batch_size": 64,
     "num_classes": 1000,
     "cfg": "/home/yair/FAME_optimizer/CvT/experiments/imagenet/cvt/cvt-13-384x384.yaml",
-    "data_path": "/home/yair/Adaptive_Group_Normalization/VTs/dataset/datasets/cifar-100",
     "distributed": false
 }

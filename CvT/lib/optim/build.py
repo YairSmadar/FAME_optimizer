@@ -120,7 +120,7 @@ def build_optimizer(cfg, model, args):
 
     optimizer = None
     params = set_wd(cfg, model)
-    if args == 'sgd':
+    if args.optimizer == 'sgd':
         optimizer = optim.SGD(
             params,
             # filter(lambda p: p.requires_grad, model.parameters()),
@@ -129,20 +129,20 @@ def build_optimizer(cfg, model, args):
             weight_decay=cfg.TRAIN.WD,
             nesterov=cfg.TRAIN.NESTEROV
         )
-    elif args == 'adam':
+    elif args.optimizer == 'adam':
         optimizer = optim.Adam(
             params,
             # filter(lambda p: p.requires_grad, model.parameters()),
             lr=args.lr,
             weight_decay=cfg.TRAIN.WD,
         )
-    elif args == 'adamW':
+    elif args.optimizer == 'adamW':
         optimizer = optim.AdamW(
             params,
             lr=args.lr,
             weight_decay=cfg.TRAIN.WD,
         )
-    elif args == 'rmsprop':
+    elif args.optimizer == 'rmsprop':
         optimizer = optim.RMSprop(
             params,
             # filter(lambda p: p.requires_grad, model.parameters()),
@@ -153,7 +153,7 @@ def build_optimizer(cfg, model, args):
             centered=cfg.TRAIN.RMSPROP_CENTERED
         )
 
-    elif args == 'fame':
+    elif args.optimizer == 'fame':
         optimizer = FAME(params, lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps,
                          )#weight_decay=config.TRAIN.WEIGHT_DECAY)
 
