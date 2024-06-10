@@ -205,7 +205,7 @@ def main():
             perf = test(
                 config, valid_loader, model, criterion_eval,
                 final_output_dir, tb_log_dir,
-                args.distributed, args, wandb_name
+                args.distributed, args=args, wandb_name=wandb_name
             )
 
             best_model = (perf > best_perf)
