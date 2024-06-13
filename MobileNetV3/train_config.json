@@ -17,7 +17,7 @@
     "dummy": false,
     "use_wandb": true,
     "seed": 0,
-    "epochs": 250,
+    "num_epoch": 250,
     "batch_size": 128,
     "distributed": false,
     "zero_gamma": true,
