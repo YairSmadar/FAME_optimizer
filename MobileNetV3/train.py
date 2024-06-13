@@ -313,7 +313,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='PyTorch implementation of MobileNetV3')
     # Root catalog of images
-    parser.add_argument('--data-dir', type=str, default='/media/data2/chenjiarong/ImageData')
+    parser.add_argument('--data-dir', type=str, default='/dev/shm/data/imagenet1k/')
     parser.add_argument('--batch-size', type=int, default=256)
     parser.add_argument('--num-epochs', type=int, default=150)
     parser.add_argument('--lr', type=float, default=0.1)
