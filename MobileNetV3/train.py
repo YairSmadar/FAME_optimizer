@@ -4,26 +4,36 @@
 Train the model
 Ref: https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
 '''
+import sys
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import wandb
 from torch.optim import lr_scheduler
 from torch.autograd import Variable
 import time
 import os
-from mobileNetV3 import MobileNetV3
+
+from minREV.optmizerAd import FAME
+
+# Assuming the 'CvT' directory is in the parent directory of the current script
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from MobileNetV3.mobileNetV3 import MobileNetV3
 import argparse
 import copy
 from math import cos, pi
 
-from statistics import *
-from EMA import EMA
-from LabelSmoothing import LabelSmoothingLoss
+from MobileNetV3.statistics import *
+from MobileNetV3.EMA import EMA
+from MobileNetV3.LabelSmoothing import LabelSmoothingLoss
 # from DataLoader import dataloaders
-from ResultWriter import ResultWriter
-from CosineLR import *
-from Mixup import mixup_data, mixup_criterion
+from MobileNetV3.ResultWriter import ResultWriter
+from MobileNetV3.CosineLR import *
+from MobileNetV3.Mixup import mixup_data, mixup_criterion
+
 
 def train(args, model, dataloader, loader_len, criterion, optimizer, scheduler, use_gpu, epoch, ema=None, save_file_name='train.csv'):
     '''
@@ -189,7 +199,21 @@ def validate(args, model, dataloader, loader_len, criterion, use_gpu, epoch, ema
 
     top1_acc = top1.avg.item()
     top5_acc = top5.avg.item()
-    
+
+    if args.use_wandb:
+
+        # save model
+        if acc1 > wandb.run.summary["best_test_accuracy"]:
+            torch.save(model.state_dict(), os.path.join('/home/yair/models/fame', wandb_name))
+
+        wandb.log({
+                   "test accuracy": top1_acc
+                   })
+
+        wandb.run.summary["best_test_accuracy"] = \
+            top1_acc if top1_acc > wandb.run.summary["best_test_accuracy"] \
+                else wandb.run.summary["best_test_accuracy"]
+
     return top1_acc, top5_acc
 
 def train_model(args, model, dataloader, loaders_len, criterion, optimizer, scheduler, use_gpu):
@@ -240,6 +264,30 @@ def train_model(args, model, dataloader, loaders_len, criterion, optimizer, sche
         torch.save(model.state_dict(), os.path.join(args.save_path, 'best_model_wts-' + '{:.2f}'.format(best_acc) + '.pth'))
     return model
 
+
+def set_seed(seed):
+    np.random.seed(seed)
+    torch.random.manual_seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+def generate_wandb_name(args):
+    name = f"model-{args.model_name}"
+    name += f"_dataset-{args.dataset}"
+    name += f"_optim-{args.optimizer}"
+
+    if args.optimizer == 'fame':
+        name += f"_b3-{args.beta3}"
+        name += f"_b4-{args.beta4}"
+
+    name += f'_seed-{args.seed}'
+
+    return name
+
+
 if __name__ == '__main__':
 
     import warnings
@@ -285,11 +333,23 @@ if __name__ == '__main__':
     parser.add_argument('-zero-gamma', default=False, action='store_true', help='zero gamma in BatchNorm2d when init')
     parser.add_argument('-mixup', default=False, action='store_true', help='mixup or not')
     parser.add_argument('--mixup-alpha', type=float, default=0.2, help='alpha used in mixup')
+    parser.add_argument('--config', default='train_config.json')
+    parser.add_argument('--arch', default='mobilenetv3-small')
+    parser.add_argument('--dummy', default=False)
     args = parser.parse_args()
 
     args.lr_decay = args.lr_decay.lower()
     args.dataset = args.dataset.lower()
     args.optimizer = args.optimizer.lower()
+
+    wandb_name = generate_wandb_name(args)
+    if args.use_wandb:
+        wandb.init(project="FAME_optimizer",
+                   entity="the-smadars",
+                   name=wandb_name,
+                   config=args)
+        wandb.run.summary["best_test_accuracy"] = 0
+        wandb.run.summary["best_test_loss"] = 999
 
     # folder to save what we need in this type: MobileNetV3-mode-dataset-width_multiplier-dropout-lr-batch_size-ema_decay-label_smoothing
     folder_name = ['MobileNetV3', args.mode, args.dataset, 'wm'+str(args.width_multiplier), 'dp'+str(args.dropout), 'lr'+str(args.lr), 'bs'+str(args.batch_size), 'ed'+str(args.ema_decay), 'ls'+str(args.label_smoothing), args.optimizer+str(args.weight_decay), 'bn'+str(args.bn_momentum), 'epochs'+str(args.num_epochs), 'seed'+(str(args.seed) if args.use_seed else 'None'), 'determin'+str(args.deterministic), 'NoBiasDecay'+str(args.nbd), 'zeroGamma'+str(args.zero_gamma), 'mixup'+(str(args.mixup_alpha) if args.mixup else 'False')]
@@ -326,6 +386,8 @@ if __name__ == '__main__':
             torch.backends.cudnn.deterministic = False
             torch.backends.cudnn.benchmark = True
         print('torch.backends.cudnn.deterministic:' + str(args.deterministic))
+
+    set_seed(args.seed)
 
     # read data
     # dataloaders = dataloaders(args)
@@ -405,6 +467,9 @@ if __name__ == '__main__':
         optimizer_ft = optim.RMSprop(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
     elif args.optimizer == 'adam':
         optimizer_ft = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    elif args.optimizer == 'fame':
+        optimizer_ft = FAME(model.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps,
+                            weight_decay=args.weight_decay)
 
     if args.lr_decay == 'step':
         # Decay LR by a factor of 0.99 every 3 epoch
