@@ -244,7 +244,7 @@ def get_dali_imageNet_train_loader(data_path, batch_size, seed, num_threads=4, d
         local_rank = 0
         world_size = 1
         
-    train_dir = os.path.join(data_path, 'ILSVRC2012_img_train')
+    train_dir = os.path.join(data_path, 'train')
     
     pipe = ImageNetHybridTrainPipe(batch_size=batch_size, num_threads=num_threads,
                            device_id=local_rank, data_dir=train_dir,
@@ -262,7 +262,7 @@ def get_dali_imageNet_val_loader(data_path, batch_size, seed, num_threads=4):
     else:
         local_rank = 0
         world_size = 1
-    val_dir = os.path.join(data_path, 'ILSVRC2012_img_val')
+    val_dir = os.path.join(data_path, 'val')
     
     pipe = ImageNetHybridValPipe(batch_size=batch_size, num_threads=num_threads,
                          device_id=local_rank, data_dir=val_dir,
