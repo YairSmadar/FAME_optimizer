@@ -129,10 +129,10 @@ def train(args, model, dataloader, loader_len, criterion, optimizer, scheduler, 
     print('lr:%.6f' % scheduler.optimizer.param_groups[0]['lr'])
     print('Train ***    Loss:{losses.avg:.2e}    Acc@1:{top1.avg:.2f}    Acc@5:{top5.avg:.2f}'.format(losses=losses, top1=top1, top5=top5))
 
-    if epoch % args.save_epoch_freq == 0 and epoch != 0:
-        if not os.path.exists(args.save_path):
-            os.makedirs(args.save_path)
-        torch.save(model.state_dict(), os.path.join(args.save_path, "epoch_" + str(epoch) + ".pth"))
+    # if epoch % args.save_epoch_freq == 0 and epoch != 0:
+    #     if not os.path.exists(args.save_path):
+    #         os.makedirs(args.save_path)
+    #     torch.save(model.state_dict(), os.path.join(args.save_path, "epoch_" + str(epoch) + ".pth"))
 
 def validate(args, model, dataloader, loader_len, criterion, use_gpu, epoch, ema=None, save_file_name='val.csv'):
     '''
