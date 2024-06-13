@@ -4,6 +4,7 @@
 Train the model
 Ref: https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
 '''
+import json
 import sys
 
 import numpy as np
@@ -15,7 +16,7 @@ from torch.optim import lr_scheduler
 from torch.autograd import Variable
 import time
 import os
-
+from copy import copy as cp
 # Assuming the 'CvT' directory is in the parent directory of the current script
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -288,6 +289,23 @@ def generate_wandb_name(args):
     return name
 
 
+def apply_config(args: argparse.Namespace, config_path: str):
+    """Overwrite the values in an arguments object by values of namesake
+    keys in a JSON config file.
+
+    :param args: The arguments object
+    :param config_path: the path to a config JSON file.
+    """
+    config_path = cp(config_path)
+    if config_path:
+        # Opening JSON file
+        f = open(config_path)
+        config_overwrite = json.load(f)
+        for k, v in config_overwrite.items():
+            if k.startswith('_'):
+                continue
+            setattr(args, k, v)
+
 if __name__ == '__main__':
 
     import warnings
@@ -341,7 +359,7 @@ if __name__ == '__main__':
     args.lr_decay = args.lr_decay.lower()
     args.dataset = args.dataset.lower()
     args.optimizer = args.optimizer.lower()
-
+    apply_config(args, args.config)
     wandb_name = generate_wandb_name(args)
     if args.use_wandb:
         wandb.init(project="FAME_optimizer",
