@@ -379,8 +379,8 @@ if __name__ == '__main__':
         folder_name.append(args.lr_decay+str(args.T_0)+'&'+str(args.T_mult)+'&'+str(args.warmup_epochs)+'&'+str(args.decay_rate))
     folder_name = '-'.join(folder_name)
     args.save_path = os.path.join(args.save_path, folder_name)
-    if not os.path.exists(args.save_path):
-        os.makedirs(args.save_path)
+    # if not os.path.exists(args.save_path):
+    #     os.makedirs(args.save_path)
 
     # use gpu or not
     use_gpu = torch.cuda.is_available()
