@@ -16,10 +16,10 @@ from torch.autograd import Variable
 import time
 import os
 
-from minREV.optmizerAd import FAME
-
 # Assuming the 'CvT' directory is in the parent directory of the current script
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from minREV.optmizerAd import FAME
 
 from MobileNetV3.mobileNetV3 import MobileNetV3
 import argparse
