@@ -193,10 +193,10 @@ def validate(args, model, dataloader, loader_len, criterion, use_gpu, epoch, ema
 
     print(' Val  ***    Loss:{losses.avg:.2e}    Acc@1:{top1.avg:.2f}    Acc@5:{top5.avg:.2f}'.format(losses=losses, top1=top1, top5=top5))
 
-    if epoch % args.save_epoch_freq == 0 and epoch != 0:
-        if not os.path.exists(args.save_path):
-            os.makedirs(args.save_path)
-        torch.save(model.state_dict(), os.path.join(args.save_path, "epoch_" + str(epoch) + ".pth"))
+    # if epoch % args.save_epoch_freq == 0 and epoch != 0:
+    #     if not os.path.exists(args.save_path):
+    #         os.makedirs(args.save_path)
+    #     torch.save(model.state_dict(), os.path.join(args.save_path, "epoch_" + str(epoch) + ".pth"))
 
     top1_acc = top1.avg.item()
     top5_acc = top5.avg.item()
@@ -261,8 +261,8 @@ def train_model(args, model, dataloader, loaders_len, criterion, optimizer, sche
     # load best model weights
     model.load_state_dict(best_model_wts)
     # save best model weights
-    if args.save:
-        torch.save(model.state_dict(), os.path.join(args.save_path, 'best_model_wts-' + '{:.2f}'.format(best_acc) + '.pth'))
+    # if args.save:
+    #     torch.save(model.state_dict(), os.path.join(args.save_path, 'best_model_wts-' + '{:.2f}'.format(best_acc) + '.pth'))
     return model
 
 
