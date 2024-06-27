@@ -1,0 +1,112 @@
+{
+    "gpu_number": "3",
+    "train_script": "main.py",
+    "config_file_path": "train_config.json",
+
+    "train_configs": 
+    [
+            {
+                "optimizer": "adam",
+                "batch_size": 120,
+                "total_epochs": 300,
+                "cfg": "./configs/vit_base_16_224.yaml",
+                "model_name": "vit",
+                "seed": 1
+            },
+            {
+                "optimizer": "sgd",
+                "batch_size": 120,
+                "total_epochs": 300,
+                "cfg": "./configs/vit_base_16_224.yaml",
+                "model_name": "vit",
+                "seed": 1
+            },
+            {
+                "optimizer": "fame",
+                "batch_size": 120,
+                "total_epochs": 300,
+                "cfg": "./configs/vit_base_16_224.yaml",
+                "model_name": "vit",
+                "seed": 1
+            },
+
+
+                    {
+                        "optimizer": "adam",
+                        "batch_size": 120,
+                        "total_epochs": 300,
+                        "cfg": "./configs/cvt_13_224.yaml",
+                        "model_name": "cvt",
+                        "seed": 1
+                    },
+                    {
+                        "optimizer": "sgd",
+                        "batch_size": 120,
+                        "total_epochs": 300,
+                        "cfg": "./configs/cvt_13_224.yaml",
+                        "model_name": "cvt",
+                        "seed": 1
+                    },
+                    {
+                        "optimizer": "fame",
+                        "batch_size": 120,
+                        "total_epochs": 300,
+                        "cfg": "./configs/cvt_13_224.yaml",
+                        "model_name": "cvt",
+                        "seed": 1
+                    },
+
+
+
+
+            {
+                "optimizer": "adam",
+                "batch_size": 120,
+                "total_epochs": 300,
+                "cfg": "./configs/swin_tiny_patch4_window7_224.yaml",
+                "model_name": "swin",
+                "seed": 1
+            },
+            {
+                "optimizer": "sgd",
+                "batch_size": 120,
+                "total_epochs": 300,
+                "cfg": "./configs/swin_tiny_patch4_window7_224.yaml",
+                "model_name": "swin",
+                "seed": 1
+            },
+            {
+                "optimizer": "fame",
+                "batch_size": 120,
+                "total_epochs": 300,
+                "cfg": "./configs/swin_tiny_patch4_window7_224.yaml",
+                "model_name": "swin",
+                "seed": 1
+            },
+
+                    {
+                        "optimizer": "adam",
+                        "batch_size": 120,
+                        "total_epochs": 300,
+                        "cfg": "./configs/t2tvit_14_224.yaml",
+                        "model_name": "t2t",
+                        "seed": 1
+                    },
+                    {
+                        "optimizer": "sgd",
+                        "batch_size": 120,
+                        "total_epochs": 300,
+                        "cfg": "./configs/t2tvit_14_224.yaml",
+                        "model_name": "t2t",
+                        "seed": 1
+                    },
+                    {
+                        "optimizer": "fame",
+                        "batch_size": 120,
+                        "total_epochs": 300,
+                        "cfg": "./configs/t2tvit_14_224.yaml",
+                        "model_name": "t2t",
+                        "seed": 1
+                    }
+    ]
+}
