@@ -103,7 +103,6 @@ def parse_option():
     parser.add_argument("--use_wandb", action='store_true', default=False)
     parser.add_argument("--model_name", type=str, default="vit")
     parser.add_argument("--config_json", type=str, default="train_config.json")
-    parser.add_argument("--configs", type=str, default="train_config.json")
 
 
     args, unparsed = parser.parse_known_args()
