@@ -16,7 +16,7 @@
     "data_dir": "/dev/shm/data/imagenet1k/",
     "dummy": false,
     "use_wandb": true,
-    "seed": 0,
+    "seed": 1,
     "num_epoch": 250,
     "batch_size": 128,
     "distributed": false,
