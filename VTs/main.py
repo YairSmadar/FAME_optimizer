@@ -189,10 +189,10 @@ def main():
     torch.cuda.set_device(config.LOCAL_RANK)
 
     seed = config.SEED
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    cudnn.benchmark = True
-    set_seed(seed)
+    # torch.manual_seed(seed)
+    # np.random.seed(seed)
+    # cudnn.benchmark = True
+    set_seed(args.seed)
 
     # Adjust learning rate based on the number of GPUs
     effective_batch_size = config.DATA.BATCH_SIZE * world_size * (
