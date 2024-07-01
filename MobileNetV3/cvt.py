@@ -189,23 +189,23 @@ class CvT(nn.Module):
         x_last = self.layers(x) # [B, C, H, W]
         pool = self.avg_pool(x_last)  # [B, C, 1, 1,]
         sup = self.head(torch.flatten(pool, 1))
-        outs = Munch(sup=sup)
+        # outs = Munch(sup=sup)
 
-        # SSUP
-        if self.use_drloc:
-            x_last = self.pool(x_last) # [B, C, H/2, W/2]
-            B, C, H, W = x_last.size()
-
-            outs.drloc = []
-            outs.deltaxy = []
-            outs.plz = []
-
-            for idx, x_cur in enumerate([x_last]):
-                drloc_feats, deltaxy = self.drloc[idx](x_cur)
-                outs.drloc.append(drloc_feats)
-                outs.deltaxy.append(deltaxy)
-                outs.plz.append(H) # plane size
-        return outs
+        # # SSUP
+        # if self.use_drloc:
+        #     x_last = self.pool(x_last) # [B, C, H/2, W/2]
+        #     B, C, H, W = x_last.size()
+        #
+        #     outs.drloc = []
+        #     outs.deltaxy = []
+        #     outs.plz = []
+        #
+        #     for idx, x_cur in enumerate([x_last]):
+        #         drloc_feats, deltaxy = self.drloc[idx](x_cur)
+        #         outs.drloc.append(drloc_feats)
+        #         outs.deltaxy.append(deltaxy)
+        #         outs.plz.append(H) # plane size
+        return sup
 
 
 

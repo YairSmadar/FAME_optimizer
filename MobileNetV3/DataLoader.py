@@ -73,8 +73,15 @@ def ImageNetDataLoader(args):
         ]),
     }
     image_datasets = {}
-    image_datasets['train'] = datasets.ImageFolder(root=os.path.join(args.data_dir, 'train'), transform=data_transforms['train'])
-    image_datasets['val'] = datasets.ImageFolder(root=os.path.join(args.data_dir, 'val'), transform=data_transforms['val'])
+    if args.dummy:
+        print("=> Dummy data is used!")
+        image_datasets['train'] = datasets.FakeData(1281167, (3, 224, 224), 1000,
+                                          transforms.ToTensor())
+        image_datasets['val'] = datasets.FakeData(50000, (3, 224, 224), 1000,
+                                        transforms.ToTensor())
+    else:
+        image_datasets['train'] = datasets.ImageFolder(root=os.path.join(args.data_dir, 'train'), transform=data_transforms['train'])
+        image_datasets['val'] = datasets.ImageFolder(root=os.path.join(args.data_dir, 'val'), transform=data_transforms['val'])
     
     dataloders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=args.batch_size, shuffle=True if x == 'train' else False,
                     num_workers=args.num_workers, pin_memory=True) for x in ['train', 'val']}
