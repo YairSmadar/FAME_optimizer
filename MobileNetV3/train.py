@@ -19,6 +19,7 @@ import os
 from copy import copy as cp
 # Assuming the 'CvT' directory is in the parent directory of the current script
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from MobileNetV3.cvt import CvT
 
 from minREV.optmizerAd import FAME
 
@@ -276,7 +277,7 @@ def set_seed(seed):
 
 
 def generate_wandb_name(args):
-    name = f"model-{args.model_name}"
+    name = f"model-{args.arch}"
     name += f"_dataset-{args.dataset}"
     name += f"_optim-{args.optimizer}"
 
@@ -353,7 +354,7 @@ if __name__ == '__main__':
     parser.add_argument('--mixup-alpha', type=float, default=0.2, help='alpha used in mixup')
     parser.add_argument('--config', default='train_config.json')
     parser.add_argument('--arch', default='mobilenetv3-small')
-    parser.add_argument('--dummy', default=False)
+    parser.add_argument('--dummy', default=False, action='store_true')
     args = parser.parse_args()
 
     args.lr_decay = args.lr_decay.lower()
@@ -447,9 +448,16 @@ if __name__ == '__main__':
         num_class = 10
     
     # get model
-    model = MobileNetV3(mode=args.mode, classes_num=num_class, input_size=input_size, 
+    if args.arch == "mobilenetv3-small":
+        model = MobileNetV3(mode=args.mode, classes_num=num_class, input_size=input_size,
                     width_multiplier=args.width_multiplier, dropout=args.dropout, 
                     BN_momentum=args.bn_momentum, zero_gamma=args.zero_gamma)
+    elif args.arch == "cvt13":
+        model = CvT(num_classes=1000,
+                    use_drloc=False,
+                    sample_size=32)
+    else:
+        raise Exception(f"The arch {args.arch} is not exist!")
 
     if use_gpu:
         if torch.cuda.device_count() > 1:
