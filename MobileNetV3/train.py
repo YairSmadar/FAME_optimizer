@@ -19,6 +19,7 @@ import os
 from copy import copy as cp
 # Assuming the 'CvT' directory is in the parent directory of the current script
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from MobileNetV3.efficientnet import EfficientNet
 from MobileNetV3.cvt import CvT
 
 from minREV.optmizerAd import FAME
@@ -456,6 +457,8 @@ if __name__ == '__main__':
         model = CvT(num_classes=1000,
                     use_drloc=False,
                     sample_size=32)
+    elif args.arch == 'efficientnet-b3':
+        model = EfficientNet.from_name('efficientnet-b3', in_channels=3, image_size=input_size)
     else:
         raise Exception(f"The arch {args.arch} is not exist!")
 

@@ -1,12 +1,12 @@
 {
     "optimizer": "sgd",
-    "arch": "cvt13",
+    "arch": "efficientnet-b3",
     "beta3": 0.3,
     "beta4": 0.7,
     "eps": 1e-5,
     "lr": 0.1,
     "weight_decay": 0,
-    "label_smoothing": 0.1,
+    "label_smoothing": 0.0,
     "ema_decay": 0.99,
     "lr_decay": "cos",
     "lr_min": 0,
@@ -14,7 +14,6 @@
     "dataset": "imagenet",
     "num_workers": 12,
     "data_dir": "/dev/shm/data/imagenet1k/",
-    "dummy": false,
     "use_wandb": true,
     "seed": 1,
     "num_epoch": 250,
@@ -22,7 +21,7 @@
     "distributed": false,
     "zero_gamma": true,
     "mixup": true,
-    "nbd": true,
-    "dali": true,
+    "nbd": false,
+    "dali": false,
     "width_multiplier": 1
 }
