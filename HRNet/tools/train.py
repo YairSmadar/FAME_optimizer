@@ -98,8 +98,7 @@ def main():
         )        
 
     # build model
-    model = eval('models.'+config.MODEL.NAME +
-                 '.get_seg_model')(config)
+    model = eval('HRNet.lib.models.' + config.MODEL.NAME + '.get_seg_model')(config)
 
     # dump_input = torch.rand(
     #     (1, 3, config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0])
