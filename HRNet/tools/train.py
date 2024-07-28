@@ -49,7 +49,10 @@ def parse_args():
                         help="Modify config options using the command-line",
                         default=None,
                         nargs=argparse.REMAINDER)
-
+    parser.add_argument('--dataset', default='cityscapes', type=str)
+    parser.add_argument('--data_root', default='/home/porat/yairs/FAME_optimizer/HRNet/_data/list/cityscapes/', type=str)
+    parser.add_argument('--num_of_classes', default=19, type=int)
+    parser.add_argument('--batch_size', default=8, type=int)
     args = parser.parse_args()
     update_config(config, args)
 
@@ -120,15 +123,15 @@ def main():
 
     # prepare data
     crop_size = (config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0])
-    train_dataset = eval('datasets.'+config.DATASET.DATASET)(
-                        root=config.DATASET.ROOT,
+    train_dataset = eval('datasets.'+args.dataset)(
+                        root=args.data_root,
                         list_path=config.DATASET.TRAIN_SET,
                         num_samples=None,
-                        num_classes=config.DATASET.NUM_CLASSES,
+                        num_classes=args.num_of_classes,
                         multi_scale=config.TRAIN.MULTI_SCALE,
                         flip=config.TRAIN.FLIP,
                         ignore_label=config.TRAIN.IGNORE_LABEL,
-                        base_size=config.TRAIN.BASE_SIZE,
+                        base_size=args.batch_size,
                         crop_size=crop_size,
                         downsample_rate=config.TRAIN.DOWNSAMPLERATE,
                         scale_factor=config.TRAIN.SCALE_FACTOR)
