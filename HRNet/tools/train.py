@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 
 import argparse
+import json
 import os
 import pprint
 import shutil
@@ -13,6 +14,7 @@ import sys
 import logging
 import time
 import timeit
+from copy import copy
 from pathlib import Path
 
 import numpy as np
@@ -55,11 +57,13 @@ def parse_args():
     parser.add_argument('--batch_size', default=8, type=int)
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--gpu', default=[0], type=list, nargs='+')
+    parser.add_argument('--config_json', default="train_config.json", type=str)
 
     args = parser.parse_args()
     update_config(config, args)
 
     return args
+
 
 def get_sampler(dataset):
     from HRNet.lib.utils.distributed import is_distributed
@@ -69,8 +73,28 @@ def get_sampler(dataset):
     else:
         return None
 
+
+def apply_config(args: argparse.Namespace, config_path: str):
+    """Overwrite the values in an arguments object by values of namesake
+    keys in a JSON config file.
+
+    :param args: The arguments object
+    :param config_path: the path to a config JSON file.
+    """
+    config_path = copy(config_path)
+    if config_path:
+        # Opening JSON file
+        f = open(config_path)
+        config_overwrite = json.load(f)
+        for k, v in config_overwrite.items():
+            if k.startswith('_'):
+                continue
+            setattr(args, k, v)
+
+
 def main():
     args = parse_args()
+    apply_config(args, args.config_json)
 
     if args.seed > 0:
         import random
