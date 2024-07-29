@@ -285,7 +285,7 @@ def main():
     
 
     # optimizer
-    if config.TRAIN.OPTIMIZER == 'sgd':
+    if args.optimizer == 'sgd':
 
         params_dict = dict(model.named_parameters())
         if config.TRAIN.NONBACKBONE_KEYWORDS:
@@ -309,6 +309,13 @@ def main():
                                 weight_decay=config.TRAIN.WD,
                                 nesterov=config.TRAIN.NESTEROV,
                                 )
+    elif args.optimizer == 'fame':
+        from minREV.optmizerAd import FAME
+        optimizer = FAME(model.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps, weight_decay=config.TRAIN.WD)
+    elif args.optimizer == 'adam':
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999), eps=args.eps, weight_decay=config.TRAIN.WD)
+    elif args.optimizer == 'adamw':
+        optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, betas=(0.9, 0.999), eps=args.eps, weight_decay=config.TRAIN.WD)
     else:
         raise ValueError('Only Support SGD optimizer')
 
