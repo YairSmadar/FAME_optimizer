@@ -54,6 +54,7 @@ def parse_args():
     parser.add_argument('--num_of_classes', default=19, type=int)
     parser.add_argument('--batch_size', default=8, type=int)
     parser.add_argument('--lr', default=0.01, type=float)
+    parser.add_argument('--gpu', default=0, type=int, nargs='+')
 
     args = parser.parse_args()
     update_config(config, args)
@@ -93,7 +94,7 @@ def main():
     cudnn.benchmark = config.CUDNN.BENCHMARK
     cudnn.deterministic = config.CUDNN.DETERMINISTIC
     cudnn.enabled = config.CUDNN.ENABLED
-    gpus = list(config.GPUS)
+    gpus = list(args.gpu)
     distributed = args.local_rank >= 0
     if distributed:
         device = torch.device('cuda:{}'.format(args.local_rank))    
