@@ -11,5 +11,5 @@
     "epochs": 300,
     "batch_size": 8,
     "num_classes": 19,
-    "cfg": "experiments/pascal_ctx/seg_hrnet_w48_cls59_520x520_sgd_lr1e-3_wd1e-4_bs_16_epoch200_paddle.yaml"
+    "cfg": "experiments/cityscapes/seg_hrnet_ocr_w48_train_512x1024_sgd_lr1e-2_wd5e-4_bs_16_epoch484_paddle.yaml"
 }
