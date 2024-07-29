@@ -64,10 +64,9 @@ def parse_args():
 
     args = parser.parse_args()
 
-    update_config(config, args)
-
     apply_config(args, args.config_json)
 
+    update_config(config, args)
 
     return args
 
