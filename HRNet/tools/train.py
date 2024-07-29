@@ -18,6 +18,8 @@ from copy import copy
 from pathlib import Path
 
 import numpy as np
+import wandb
+
 # Add the project's root directory to sys.path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 sys.path.append(project_root)
@@ -92,15 +94,49 @@ def apply_config(args: argparse.Namespace, config_path: str):
             setattr(args, k, v)
 
 
+def set_seed(seed):
+    np.random.seed(seed)
+    torch.random.manual_seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+def generate_wandb_name(args):
+    name = f"model-{args.model_name}"
+    name += f"_dataset-{args.dataset}"
+    name += f"_optim-{args.optimizer}"
+
+    if args.optimizer == 'fame':
+        name += f"_b3-{args.beta3}"
+        name += f"_b4-{args.beta4}"
+
+    name += f'_seed-{args.seed}'
+
+    return name
+
+
 def main():
     args = parse_args()
     apply_config(args, args.config_json)
+
+    wandb_name = generate_wandb_name(args)
+    if args.use_wandb:
+        wandb.init(project="FAME_optimizer",
+                   entity="the-smadars",
+                   name=wandb_name,
+                   config=args)
+        wandb.run.summary["best_test_accuracy"] = 0
+        wandb.run.summary["best_test_loss"] = 999
 
     if args.seed > 0:
         import random
         print('Seeding with', args.seed)
         random.seed(args.seed)
         torch.manual_seed(args.seed)        
+
+    set_seed(args.seed)
 
     logger, final_output_dir, tb_log_dir = create_logger(
         config, args.cfg, 'train')
@@ -338,6 +374,16 @@ def main():
                         valid_loss, mean_IoU, best_mIoU)
             logging.info(msg)
             logging.info(IoU_array)
+
+            if args.use_wandb:
+                wandb.log({"test loss": valid_loss,
+                           "mean_IoU": mean_IoU
+                           })
+
+                # save model
+                if mean_IoU > wandb.run.summary["best_mean_IoU"]:
+                    torch.save(model.state_dict(), os.path.join('/home/porat/yairs/models/fame', wandb_name))
+                    wandb.run.summary["best_mean_IoU"] = mean_IoU
 
     if args.local_rank <= 0:
 
