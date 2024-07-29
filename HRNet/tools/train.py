@@ -45,7 +45,7 @@ def parse_args():
     
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        required=True,
+                        required=False,
                         type=str)
     parser.add_argument('--seed', type=int, default=304)
     parser.add_argument("--local_rank", type=int, default=-1)       
