@@ -62,6 +62,8 @@ def parse_args():
     parser.add_argument('--config_json', default="train_config.json", type=str)
 
     args = parser.parse_args()
+    apply_config(args, args.config_json)
+
     update_config(config, args)
 
     return args
@@ -119,7 +121,6 @@ def generate_wandb_name(args):
 
 def main():
     args = parse_args()
-    apply_config(args, args.config_json)
 
     wandb_name = generate_wandb_name(args)
     if args.use_wandb:
