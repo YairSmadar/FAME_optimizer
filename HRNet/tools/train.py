@@ -44,6 +44,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train segmentation network')
     
     parser.add_argument('--cfg',
+                        default='HRNet/experiments/cityscapes/hrnet_w48_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484.yaml',
                         help='experiment configure file name',
                         required=False,
                         type=str)
@@ -62,9 +63,11 @@ def parse_args():
     parser.add_argument('--config_json', default="train_config.json", type=str)
 
     args = parser.parse_args()
-    apply_config(args, args.config_json)
 
     update_config(config, args)
+
+    apply_config(args, args.config_json)
+
 
     return args
 
