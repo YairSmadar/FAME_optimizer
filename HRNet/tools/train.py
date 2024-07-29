@@ -50,7 +50,7 @@ def parse_args():
                         default=None,
                         nargs=argparse.REMAINDER)
     parser.add_argument('--dataset', default='cityscapes', type=str)
-    parser.add_argument('--data_root', default='/home/porat/yairs/data/cityscapes/', type=str)
+    parser.add_argument('--data_root', default='/home/porat/yairs/FAME_optimizer/HRNet/_data/list/cityscapes/', type=str)
     parser.add_argument('--num_of_classes', default=19, type=int)
     parser.add_argument('--batch_size', default=8, type=int)
     parser.add_argument('--lr', default=0.01, type=float)
