@@ -10,7 +10,7 @@ PRINT_FREQ: 100
 
 DATASET:
   DATASET: cityscapes
-  ROOT: '../../../../dataset/original_cityscapes/'
+  ROOT: '/home/porat/yairs/FAME_optimizer/HRNet/_data/list/cityscapes/'
   TEST_SET: 'val.lst'
   TRAIN_SET: 'train.lst'
   NUM_CLASSES: 19
