@@ -130,8 +130,7 @@ def main():
                    entity="the-smadars",
                    name=wandb_name,
                    config=args)
-        wandb.run.summary["best_test_accuracy"] = 0
-        wandb.run.summary["best_test_loss"] = 999
+        wandb.run.summary["best_mean_IoU"] = 0
 
     if args.seed > 0:
         import random
