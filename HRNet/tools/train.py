@@ -53,6 +53,8 @@ def parse_args():
     parser.add_argument('--data_root', default='/home/porat/yairs/FAME_optimizer/HRNet/_data/list/cityscapes/', type=str)
     parser.add_argument('--num_of_classes', default=19, type=int)
     parser.add_argument('--batch_size', default=8, type=int)
+    parser.add_argument('--lr', default=0.01, type=float)
+
     args = parser.parse_args()
     update_config(config, args)
 
@@ -233,12 +235,12 @@ def main():
                 else:
                     bb_lr.append(param)
             print(nbb_keys)
-            params = [{'params': bb_lr, 'lr': config.TRAIN.LR}, {'params': nbb_lr, 'lr': config.TRAIN.LR * config.TRAIN.NONBACKBONE_MULT}]
+            params = [{'params': bb_lr, 'lr': args.lr}, {'params': nbb_lr, 'lr': args.lr * config.TRAIN.NONBACKBONE_MULT}]
         else:
             params = [{'params': list(params_dict.values()), 'lr': config.TRAIN.LR}]
 
         optimizer = torch.optim.SGD(params,
-                                lr=config.TRAIN.LR,
+                                lr=args.lr,
                                 momentum=config.TRAIN.MOMENTUM,
                                 weight_decay=config.TRAIN.WD,
                                 nesterov=config.TRAIN.NESTEROV,
@@ -288,7 +290,7 @@ def main():
                   extra_trainloader, optimizer, model, writer_dict)
         else:
             train(config, epoch, config.TRAIN.END_EPOCH, 
-                  epoch_iters, config.TRAIN.LR, num_iters,
+                  epoch_iters, args.lr, num_iters,
                   trainloader, optimizer, model, writer_dict)
 
         valid_loss, mean_IoU, IoU_array = validate(config, 
