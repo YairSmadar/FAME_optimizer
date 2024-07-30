@@ -12,7 +12,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.cuda.amp import GradScaler
 
-from optmizerAd import DAdam
+from minREV.optmizerAd import FAME
 
 import wandb
 from fast_rev import FastRevViT
@@ -37,7 +37,7 @@ def parse_args():
     # Optimizer options
     parser.add_argument("--lr", default=1e-4, type=float, help="learning rate")
     parser.add_argument("--bs", default=128, type=int, help="batch size")
-
+    parser.add_argument('--weight_decay', default=0.0001, type=float, help="weight decay")
     parser.add_argument("--seed", default=0, type=int, help="seed")
     parser.add_argument("--optimizer", default="adam", type=str, help="optimizer type, adam/sgd/fame")
     parser.add_argument("--beta3", default=0.3, type=float, help="beta3 for fame")
@@ -179,7 +179,7 @@ def test(epoch):
 
 
 def generate_wandb_name(args):
-    name = f"model-{args.model}"
+    name = f"model-{args.model_name}"
     name += f"_optim-{args.optimizer}"
     name += f"_dataset-{args.dataset}"
 
@@ -317,11 +317,11 @@ if __name__ == '__main__':
 
     # set up optimizer
     if args.optimizer == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=args.lr)
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, eps=args.eps)
     elif args.optimizer == "sgd":
-        optimizer = optim.SGD(model.parameters(), lr=args.lr)
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     elif args.optimizer == "fame":
-        optimizer = DAdam(model.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps)
+        optimizer = FAME(model.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps, weight_decay=args.weight_decay)
     else:
         raise Exception(f"no {args.optimizer} optimizer")
 

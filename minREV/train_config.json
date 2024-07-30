@@ -1,6 +1,7 @@
 {
   "model": "vit",
-  "optimizer": "fame",
+  "model_name": "RevVit",
+  "optimizer": "adam",
   "dataset": "CIFAR100",
   "beta3": 0.3,
   "beta4": 0.7,
@@ -10,9 +11,8 @@
   "depth": 6,
   "embed_dim": 128,
   "bs": 128,
-  "lr": 1e-3,
+  "lr": 0.1,
   "seed": 0,
   "use_wandb": true,
-  "load": "W1.pt",
   "num_classes": 100
 }
