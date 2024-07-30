@@ -12,7 +12,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.cuda.amp import GradScaler
 
-from minREV.optmizerAd import FAME
+from optmizerAd import FAME
 
 import wandb
 from fast_rev import FastRevViT
