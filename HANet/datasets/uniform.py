@@ -56,6 +56,8 @@ def class_centroids_image(item, tile_size, num_classes, id2trainid):
     image_fn, label_fn = item
     centroids = defaultdict(list)
     mask = np.array(Image.open(label_fn))
+    mask = mask.astype(np.int64)
+
     image_size = mask.shape
     tile_locations = calc_tile_locations(tile_size, image_size)
 
