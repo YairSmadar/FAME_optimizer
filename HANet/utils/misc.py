@@ -11,6 +11,8 @@ from datetime import datetime
 import logging
 from subprocess import call
 import shlex
+
+import wandb
 from tensorboardX import SummaryWriter
 import numpy as np
 import torchvision.transforms as standard_transforms
@@ -132,7 +134,7 @@ def evaluate_eval_for_inference(hist, dataset=None):
 
 
 
-def evaluate_eval(args, net, optimizer, scheduler, val_loss, hist, dump_images, writer, epoch=0, dataset=None, curr_iter=0, optimizer_at=None, scheduler_at=None):
+def evaluate_eval(args, net, optimizer, scheduler, val_loss, hist, dump_images, writer, epoch=0, dataset=None, curr_iter=0, optimizer_at=None, scheduler_at=None, wandb_name=None):
     """
     Modified IOU mechanism for on-the-fly IOU calculations ( prevents memory overflow for
     large dataset) Only applies to eval/eval.py
@@ -240,6 +242,16 @@ def evaluate_eval(args, net, optimizer, scheduler, val_loss, hist, dump_images, 
         # val_visual = vutils.make_grid(val_visual, nrow=10, padding=5)
         # writer.add_image('imgs', val_visual, curr_iter )
 
+    if args.use_wandb:
+        wandb.log({"test loss": val_loss.avg,
+                   "mean_IoU": mean_iu
+                   })
+
+        # save model
+        if mean_iu > wandb.run.summary["best_mean_IoU"]:
+            torch.save(net.state_dict(), os.path.join('/home/porat/yairs/models/fame', wandb_name))
+            wandb.run.summary["best_mean_IoU"] = mean_iu
+
     logging.info('-' * 107)
     fmt_str = '[epoch %d], [val loss %.5f], [acc %.5f], [acc_cls %.5f], ' +\
               '[mean_iu %.5f], [fwavacc %.5f]'
@@ -257,9 +269,6 @@ def evaluate_eval(args, net, optimizer, scheduler, val_loss, hist, dump_images, 
     writer.add_scalar('training/acc_cls', acc_cls, curr_iter)
     writer.add_scalar('training/mean_iu', mean_iu, curr_iter)
     writer.add_scalar('training/val_loss', val_loss.avg, curr_iter)
-
-
-
 
 
 def print_evaluate_results(hist, iu, dataset=None):

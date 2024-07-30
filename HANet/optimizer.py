@@ -5,7 +5,7 @@ import math
 import logging
 import torch
 from torch import optim
-from config import cfg
+from HANet.config import cfg
 
 
 def get_optimizer(args, net):
@@ -54,6 +54,13 @@ def get_optimizer(args, net):
                                 weight_decay=5e-4, #args.weight_decay,
                                 momentum=args.momentum,
                                 nesterov=False)
+    elif args.optimizer == 'fame':
+        from minREV.optmizerAd import FAME
+        optimizer = FAME(net.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps, weight_decay=args.weight_decay)
+    elif args.optimizer == 'adam':
+        optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, eps=args.eps, weight_decay=args.weight_decay)
+    elif args.optimizer == 'adamw':
+        optimizer = torch.optim.AdamW(net.parameters(), lr=args.lr, eps=args.eps, weight_decay=args.weight_decay)
     else:
         raise ValueError('Not a valid optimizer')
 
@@ -140,6 +147,13 @@ def get_optimizer_attention(args, net):
                                 weight_decay=5e-4, #args.weight_decay,
                                 momentum=args.momentum,
                                 nesterov=False)
+    elif args.optimizer == 'fame':
+        from minREV.optmizerAd import FAME
+        optimizer = FAME(net.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps, weight_decay=args.weight_decay)
+    elif args.optimizer == 'adam':
+        optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, eps=args.eps, weight_decay=args.weight_decay)
+    elif args.optimizer == 'adamw':
+        optimizer = torch.optim.AdamW(net.parameters(), lr=args.lr, eps=args.eps, weight_decay=args.weight_decay)
     else:
         raise ValueError('Not a valid optimizer')
 

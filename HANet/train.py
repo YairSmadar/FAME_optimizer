@@ -4,22 +4,32 @@ training code
 from __future__ import absolute_import
 from __future__ import division
 import argparse
+import json
 import logging
 import os
-import torch
+import sys
+from copy import copy
 
-from config import cfg, assert_and_infer_cfg
-from utils.misc import AverageMeter, prep_experiment, evaluate_eval, fast_hist
-import datasets
-import loss
-import network
-import optimizer
+
+# Add the project's root directory to sys.path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(project_root)
+
+
+import torch
+import wandb
+
+from HANet.config import cfg, assert_and_infer_cfg
+from HANet.utils.misc import AverageMeter, prep_experiment, evaluate_eval, fast_hist
+import HANet.datasets as datasets
+import HANet.loss as loss
+import HANet.network as network
+import HANet.optimizer as optimizer
 import time
 import torchvision.utils as vutils
 import torch.nn.functional as F
 from network.mynn import freeze_weights, unfreeze_weights
 import numpy as np
-
 
 # Argument Parser
 parser = argparse.ArgumentParser(description='Semantic Segmentation')
@@ -64,12 +74,13 @@ parser.add_argument('--local_rank', default=0, type=int,
 
 parser.add_argument('--sgd', action='store_true', default=True)
 parser.add_argument('--adam', action='store_true', default=False)
+parser.add_argument('--optimizer', type=str, default='sgd')
 parser.add_argument('--amsgrad', action='store_true', default=False)
 
 parser.add_argument('--freeze_trunk', action='store_true', default=False)
 parser.add_argument('--hardnm', default=0, type=int,
                     help='0 means no aug, 1 means hard negative mining iter 1,' +
-                    '2 means hard negative mining iter 2')
+                         '2 means hard negative mining iter 2')
 
 parser.add_argument('--trunk', type=str, default='resnet101',
                     help='trunk model, can be: resnet101 (default), resnet50')
@@ -127,7 +138,7 @@ parser.add_argument('--dump_augmentation_images', action='store_true', default=F
                     help='Dump Augmentated Images for sanity check')
 parser.add_argument('--test_mode', action='store_true', default=False,
                     help='Minimum testing to verify nothing failed, ' +
-                    'Runs code for 1 epoch of train and val')
+                         'Runs code for 1 epoch of train and val')
 parser.add_argument('-wb', '--wt_bound', type=float, default=1.0,
                     help='Weight Scaling for the losses')
 parser.add_argument('--maxSkip', type=int, default=0,
@@ -136,11 +147,11 @@ parser.add_argument('--scf', action='store_true', default=False,
                     help='scale correction factor')
 parser.add_argument('--dist_url', default='tcp://127.0.0.1:', type=str,
                     help='url used to set up distributed training')
-parser.add_argument('--hanet', nargs='*', type=int, default=[0,0,0,0,0],
+parser.add_argument('--hanet', nargs='*', type=int, default=[0, 0, 0, 0, 0],
                     help='Row driven attention networks module')
-parser.add_argument('--hanet_set', nargs='*', type=int, default=[0,0,0],
+parser.add_argument('--hanet_set', nargs='*', type=int, default=[0, 0, 0],
                     help='Row driven attention networks module')
-parser.add_argument('--hanet_pos', nargs='*', type=int, default=[0,0,0],
+parser.add_argument('--hanet_pos', nargs='*', type=int, default=[0, 0, 0],
                     help='Row driven attention networks module')
 parser.add_argument('--pos_rfactor', type=int, default=0,
                     help='number of position information, if 0, do not use')
@@ -153,7 +164,7 @@ parser.add_argument('--backbone_lr', type=float, default=0.0,
 parser.add_argument('--hanet_lr', type=float, default=0.0,
                     help='different learning rate on attention module')
 parser.add_argument('--hanet_wd', type=float, default=0.0001,
-                    help='different weight decay on attention module')                    
+                    help='different weight decay on attention module')
 parser.add_argument('--dropout', type=float, default=0.0)
 parser.add_argument('--pos_noise', type=float, default=0.0)
 parser.add_argument('--no_pos_dataset', action='store_true', default=False,
@@ -162,9 +173,31 @@ parser.add_argument('--use_hanet', action='store_true', default=False,
                     help='use hanet')
 parser.add_argument('--pooling', type=str, default='mean',
                     help='pooling methods, average is better than max')
-
+parser.add_argument('--config_path', type=str, default='train_config.json')
 
 args = parser.parse_args()
+
+
+def apply_config(args: argparse.Namespace, config_path: str):
+    """Overwrite the values in an arguments object by values of namesake
+    keys in a JSON config file.
+
+    :param args: The arguments object
+    :param config_path: the path to a config JSON file.
+    """
+    config_path = copy(config_path)
+    if config_path:
+        # Opening JSON file
+        f = open(config_path)
+        config_overwrite = json.load(f)
+        for k, v in config_overwrite.items():
+            if k.startswith('_'):
+                continue
+            setattr(args, k, v)
+
+
+apply_config(args, args.config_path)
+
 args.best_record = {'epoch': -1, 'iter': 0, 'val_loss': 1e10, 'acc': 0,
                     'acc_cls': 0, 'mean_iu': 0, 'fwavacc': 0}
 
@@ -186,11 +219,35 @@ if 'WORLD_SIZE' in os.environ:
 torch.cuda.set_device(args.local_rank)
 print('My Rank:', args.local_rank)
 # Initialize distributed communication
-args.dist_url = args.dist_url + str(8000 + (int(time.time()%1000))//10)
+args.dist_url = args.dist_url + str(8000 + (int(time.time() % 1000)) // 10)
 
 torch.distributed.init_process_group(backend='nccl',
-                                        init_method=args.dist_url,
-                                        world_size=args.world_size, rank=args.local_rank)
+                                     init_method=args.dist_url,
+                                     world_size=args.world_size, rank=args.local_rank)
+
+
+def set_seed(seed):
+    np.random.seed(seed)
+    torch.random.manual_seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+def generate_wandb_name(args):
+    name = f"model-{args.model_name}"
+    name += f"_dataset-{args.dataset}"
+    name += f"_optim-{args.optimizer}"
+
+    if args.optimizer == 'fame':
+        name += f"_b3-{args.beta3}"
+        name += f"_b4-{args.beta4}"
+
+    name += f'_seed-{args.seed}'
+
+    return name
+
 
 def main():
     """
@@ -200,7 +257,17 @@ def main():
     assert_and_infer_cfg(args)
     writer = prep_experiment(args, parser)
 
-    if args.attention_loss>0 and args.hanet[4]==0:
+    wandb_name = generate_wandb_name(args)
+    if args.use_wandb:
+        wandb.init(project="FAME_optimizer",
+                   entity="the-smadars",
+                   name=wandb_name,
+                   config=args)
+        wandb.run.summary["best_mean_IoU"] = 0
+
+    set_seed(args.seed)
+
+    if args.attention_loss > 0 and args.hanet[4] == 0:
         print("last hanet is not defined !!!!")
         exit()
 
@@ -211,7 +278,7 @@ def main():
         criterion_aux = loss.get_loss_aux(args)
         net = network.get_net(args, criterion, criterion_aux)
     else:
-        net = network.get_net(args, criterion)      
+        net = network.get_net(args, criterion)
 
     for i in range(5):
         if args.hanet[i] > 0:
@@ -221,7 +288,7 @@ def main():
         optim, scheduler, optim_at, scheduler_at = optimizer.get_optimizer_attention(args, net)
     else:
         optim, scheduler = optimizer.get_optimizer(args, net)
-  
+
     net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
     net = network.warp_network_in_dataparallel(net, args.local_rank)
     epoch = 0
@@ -230,7 +297,7 @@ def main():
     if args.snapshot:
         if (args.use_hanet and args.hanet_lr > 0.0):
             epoch, mean_iu = optimizer.load_weights_hanet(net, optim, optim_at, scheduler, scheduler_at,
-                                args.snapshot, args.restore_optimizer)
+                                                          args.snapshot, args.restore_optimizer)
             if args.restore_optimizer is True:
                 iter_per_epoch = len(train_loader)
                 i = iter_per_epoch * epoch
@@ -239,7 +306,7 @@ def main():
             print("mean_iu", mean_iu)
         else:
             epoch, mean_iu = optimizer.load_weights(net, optim, scheduler,
-                                args.snapshot, args.restore_optimizer)
+                                                    args.snapshot, args.restore_optimizer)
             if args.restore_optimizer is True:
                 iter_per_epoch = len(train_loader)
                 i = iter_per_epoch * epoch
@@ -249,8 +316,8 @@ def main():
     if args.snapshot_pe:
         if (args.use_hanet and args.hanet_lr > 0.0):
             optimizer.load_weights_pe(net, args.snapshot_pe)
-            #optimizer.freeze_pe(net)
-        
+            # optimizer.freeze_pe(net)
+
     print("#### iteration", i)
     torch.cuda.empty_cache()
     # Main Loop
@@ -258,9 +325,9 @@ def main():
 
     if (args.use_hanet and args.hanet_pos[1] == 0):  # embedding
         if args.hanet_lr > 0.0:
-            validate(val_loader, net, criterion_val, optim, scheduler, epoch, writer, i, optim_at, scheduler_at)
+            validate(val_loader, net, criterion_val, optim, scheduler, epoch, writer, i, optim_at, scheduler_at, wandb_name=wandb_name)
         else:
-            validate(val_loader, net, criterion_val, optim, scheduler, epoch, writer, i)
+            validate(val_loader, net, criterion_val, optim, scheduler, epoch, writer, i, wandb_name=wandb_name)
 
     while i < args.max_iter:
         # Update EPOCH CTR
@@ -272,12 +339,12 @@ def main():
             # validate(val_loader, net, criterion_val, optim, epoch, writer, i, optim_at)
             i = train(train_loader, net, optim, epoch, writer, scheduler, args.max_iter, optim_at, scheduler_at)
             train_loader.sampler.set_epoch(epoch + 1)
-            validate(val_loader, net, criterion_val, optim, scheduler, epoch+1, writer, i, optim_at, scheduler_at)
+            validate(val_loader, net, criterion_val, optim, scheduler, epoch + 1, writer, i, optim_at, scheduler_at, wandb_name=wandb_name)
         else:
             # validate(val_loader, net, criterion_val, optim, epoch, writer, i)
             i = train(train_loader, net, optim, epoch, writer, scheduler, args.max_iter)
             train_loader.sampler.set_epoch(epoch + 1)
-            validate(val_loader, net, criterion_val, optim, scheduler, epoch+1, writer, i)
+            validate(val_loader, net, criterion_val, optim, scheduler, epoch + 1, writer, i, wandb_name=wandb_name)
 
         if args.class_uniform_pct:
             if epoch >= args.max_cu_epoch:
@@ -302,11 +369,11 @@ def train(train_loader, net, optim, curr_epoch, writer, scheduler, max_iter, opt
     net.train()
     requires_attention = False
 
-    if args.attention_loss>0:
+    if args.attention_loss > 0:
         get_attention_gt = Generate_Attention_GT(args.dataset_cls.num_classes)
         criterion_attention = loss.get_loss_bcelogit(args)
         requires_attention = True
-    
+
     train_total_loss = AverageMeter()
     time_meter = AverageMeter()
 
@@ -335,7 +402,7 @@ def train(train_loader, net, optim, curr_epoch, writer, scheduler, max_iter, opt
             optim_at.zero_grad()
 
         if args.no_pos_dataset:
-            main_loss = net(inputs, gts=gts)        
+            main_loss = net(inputs, gts=gts)
             del inputs, gts
         else:
             if args.pos_rfactor > 0:
@@ -345,18 +412,20 @@ def train(train_loader, net, optim, curr_epoch, writer, scheduler, max_iter, opt
 
             if args.aux_loss:
                 main_loss, aux_loss = outputs[0], outputs[1]
-                if args.attention_loss>0:
+                if args.attention_loss > 0:
                     attention_map = outputs[2]
                     attention_labels = get_attention_gt(aux_gts, attention_map.shape)
                     # print(attention_map.shape, attention_labels.shape)
-                    attention_loss = criterion_attention(input=attention_map.transpose(1,2), target=attention_labels.transpose(1,2))
+                    attention_loss = criterion_attention(input=attention_map.transpose(1, 2),
+                                                         target=attention_labels.transpose(1, 2))
             else:
-                if args.attention_loss>0:
+                if args.attention_loss > 0:
                     main_loss = outputs[0]
                     attention_map = outputs[1]
                     attention_labels = get_attention_gt(aux_gts, attention_map.shape)
                     # print(attention_map.shape, attention_labels.shape)
-                    attention_loss = criterion_attention(input=attention_map.transpose(1,2), target=attention_labels.transpose(1,2))
+                    attention_loss = criterion_attention(input=attention_map.transpose(1, 2),
+                                                         target=attention_labels.transpose(1, 2))
                 else:
                     main_loss = outputs
 
@@ -364,7 +433,7 @@ def train(train_loader, net, optim, curr_epoch, writer, scheduler, max_iter, opt
 
         if args.no_pos_dataset:
             total_loss = main_loss
-        elif args.attention_loss>0:
+        elif args.attention_loss > 0:
             if args.aux_loss:
                 total_loss = main_loss + (0.4 * aux_loss) + (args.attention_loss * attention_loss)
             else:
@@ -399,18 +468,19 @@ def train(train_loader, net, optim, curr_epoch, writer, scheduler, max_iter, opt
             if i % 50 == 49:
                 if optim_at is not None:
                     msg = '[epoch {}], [iter {} / {} : {}], [loss {:0.6f}], [lr {:0.6f}], [lr_at {:0.6f}], [time {:0.4f}]'.format(
-                    curr_epoch, i + 1, len(train_loader), curr_iter, train_total_loss.avg,
-                    optim.param_groups[-1]['lr'], optim_at.param_groups[-1]['lr'], time_meter.avg / args.train_batch_size)
+                        curr_epoch, i + 1, len(train_loader), curr_iter, train_total_loss.avg,
+                        optim.param_groups[-1]['lr'], optim_at.param_groups[-1]['lr'],
+                                    time_meter.avg / args.train_batch_size)
                 else:
                     msg = '[epoch {}], [iter {} / {} : {}], [loss {:0.6f}], [lr {:0.6f}], [time {:0.4f}]'.format(
                         curr_epoch, i + 1, len(train_loader), curr_iter, train_total_loss.avg,
                         optim.param_groups[-1]['lr'], time_meter.avg / args.train_batch_size)
-    
+
                 logging.info(msg)
 
                 # Log tensorboard metrics for each iteration of the training phase
                 writer.add_scalar('loss/train_loss', (train_total_loss.avg),
-                                curr_iter)
+                                  curr_iter)
                 train_total_loss.reset()
                 time_meter.reset()
 
@@ -419,7 +489,9 @@ def train(train_loader, net, optim, curr_epoch, writer, scheduler, max_iter, opt
 
     return curr_iter
 
-def validate(val_loader, net, criterion, optim, scheduler, curr_epoch, writer, curr_iter, optim_at=None, scheduler_at=None):
+
+def validate(val_loader, net, criterion, optim, scheduler, curr_epoch, writer, curr_iter, optim_at=None,
+             scheduler_at=None, wandb_name=""):
     """
     Runs the validation loop after each training epoch
     val_loader: Data loader for validation
@@ -498,22 +570,24 @@ def validate(val_loader, net, criterion, optim, scheduler, curr_epoch, writer, c
     if args.local_rank == 0:
         if optim_at is not None:
             evaluate_eval(args, net, optim, scheduler, val_loss, iou_acc, dump_images,
-                        writer, curr_epoch, args.dataset_cls, curr_iter, optim_at, scheduler_at)
+                          writer, curr_epoch, args.dataset_cls, curr_iter, optim_at, scheduler_at, wandb_name=wandb_name)
         else:
             evaluate_eval(args, net, optim, scheduler, val_loss, iou_acc, dump_images,
-                        writer, curr_epoch, args.dataset_cls, curr_iter)
+                          writer, curr_epoch, args.dataset_cls, curr_iter, wandb_name=wandb_name)
         if args.use_hanet and args.hanet_pos[0] > 0:  # use pos and hanet
             visualize_attention(writer, attention_map, curr_iter)
-            #if args.hanet_pos[1] == 0:  # embedding
+            # if args.hanet_pos[1] == 0:  # embedding
             #    visualize_pos(writer, pos_map, curr_iter)
 
     return val_loss.avg
 
+
 num_vis_pos = 0
+
 
 def visualize_pos(writer, pos_maps, iteration):
     global num_vis_pos
-    #if num_vis_pos % 5 == 0:
+    # if num_vis_pos % 5 == 0:
     #    save_pos_numpy(pos_maps, iteration)
     num_vis_pos += 1
 
@@ -533,19 +607,21 @@ def visualize_pos(writer, pos_maps, iteration):
 
             H, D = pos_embedding.shape
             pos_embedding = pos_embedding.unsqueeze(0)  # 1 X H X D
-            if H > D:   # e.g. 32 X 8
-                pos_embedding = F.interpolate(pos_embedding, H, mode='nearest') # 1 X 32 X 8
+            if H > D:  # e.g. 32 X 8
+                pos_embedding = F.interpolate(pos_embedding, H, mode='nearest')  # 1 X 32 X 8
                 D = H
-            elif H < D:   # H < D, e.g. 32 X 64
-                pos_embedding = F.interpolate(pos_embedding.transpose(1,2), D, mode='nearest').transpose(1,2) # 1 X 32 X 64
+            elif H < D:  # H < D, e.g. 32 X 64
+                pos_embedding = F.interpolate(pos_embedding.transpose(1, 2), D, mode='nearest').transpose(1,
+                                                                                                          2)  # 1 X 32 X 64
                 H = D
-            if args.hanet_pos[1]==1: # pos encoding
-                pos_embedding = torch.cat((torch.ones(1, H, D).cuda(), pos_embedding/2, pos_embedding/2), 0)
-            else:   # pos embedding
-                pos_embedding = torch.cat((torch.ones(1, H, D).cuda(), torch.sigmoid(pos_embedding*20),
-                                        torch.sigmoid(pos_embedding*20)), 0)
-            pos_embedding = vutils.make_grid(pos_embedding, padding=5, normalize=False, range=(0,1))
+            if args.hanet_pos[1] == 1:  # pos encoding
+                pos_embedding = torch.cat((torch.ones(1, H, D).cuda(), pos_embedding / 2, pos_embedding / 2), 0)
+            else:  # pos embedding
+                pos_embedding = torch.cat((torch.ones(1, H, D).cuda(), torch.sigmoid(pos_embedding * 20),
+                                           torch.sigmoid(pos_embedding * 20)), 0)
+            pos_embedding = vutils.make_grid(pos_embedding, padding=5, normalize=False, range=(0, 1))
             writer.add_image(stage + '/Pos/layer-' + str(i) + '-' + str(j), pos_embedding, iteration)
+
 
 def save_pos_numpy(pos_maps, iteration):
     file_fullpath = '/home/userA/shchoi/Projects/visualization/pos_data/'
@@ -565,37 +641,41 @@ def save_pos_numpy(pos_maps, iteration):
                 pos_embedding = pos_map
 
             H, D = pos_embedding.shape
-            pos_embedding = pos_embedding.data.cpu().numpy()   # H X D
+            pos_embedding = pos_embedding.data.cpu().numpy()  # H X D
             file_name_post = str(i) + '_' + str(j) + '_' + str(H) + 'X' + str(D) + '_' + str(iteration)
             np.save(file_fullpath + file_name + file_name_post, pos_embedding)
+
 
 def visualize_attention(writer, attention_map, iteration, threshold=0):
     stage = 'valid'
     for i in range(len(attention_map)):
         C = attention_map[i].shape[1]
-        #H = alpha[2].shape[2]
+        # H = alpha[2].shape[2]
         attention_map_sb = F.interpolate(attention_map[i], C, mode='nearest')
-        attention_map_sb = attention_map_sb[0].transpose(0,1).unsqueeze(0)  # 1 X H X C X 1, 
+        attention_map_sb = attention_map_sb[0].transpose(0, 1).unsqueeze(0)  # 1 X H X C X 1,
         attention_map_sb = torch.cat((torch.ones(1, C, C).cuda(), torch.abs(attention_map_sb - 1.0),
-                        torch.abs(attention_map_sb - 1.0)), 0)
-        attention_map_sb = vutils.make_grid(attention_map_sb, padding=5, normalize=False, range=(threshold,1))
+                                      torch.abs(attention_map_sb - 1.0)), 0)
+        attention_map_sb = vutils.make_grid(attention_map_sb, padding=5, normalize=False, range=(threshold, 1))
         writer.add_image(stage + '/Attention/Row-wise-' + str(i), attention_map_sb, iteration)
 
+
 from threading import Thread
-#import cupy as cp
-    
-class Generate_Attention_GT(object):   # 34818
+
+
+# import cupy as cp
+
+class Generate_Attention_GT(object):  # 34818
     def __init__(self, n_classes=19):
-        self.channel_weight_factor = 0   # TBD
+        self.channel_weight_factor = 0  # TBD
         self.ostride = 0
         self.labels = 0
         self.attention_labels = 0
         self.n_classes = n_classes
 
     def rows_hasclass(self, B, C):
-        rows = cp.where(self.labels[B]==C)[0]
+        rows = cp.where(self.labels[B] == C)[0]
         if len(rows) > 0:
-            row = cp.asnumpy(cp.unique((rows//self.ostride), return_counts=False))
+            row = cp.asnumpy(cp.unique((rows // self.ostride), return_counts=False))
             print("channel", C, "row", row)
             self.attention_labels[B][C][row] = 1
 
@@ -609,9 +689,9 @@ class Generate_Attention_GT(object):   # 34818
         # threads = []
         for j in range(0, labels.shape[0]):
             for k in range(0, self.n_classes):
-                rows = cp.where(self.labels[j]==k)[0]
+                rows = cp.where(self.labels[j] == k)[0]
                 if len(rows) > 0:
-                    row = cp.asnumpy(cp.unique((rows//self.ostride), return_counts=False))
+                    row = cp.asnumpy(cp.unique((rows // self.ostride), return_counts=False))
                     # print("channel", k, "row", row)
                     self.attention_labels[j][k][row] = 1
 

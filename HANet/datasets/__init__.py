@@ -1,17 +1,17 @@
 """
 Dataset setup and loaders
 """
-from datasets import cityscapes
-from datasets import mapillary
-from datasets import kitti
-from datasets import camvid
-from datasets import bdd100k
-from datasets import gtav
+from HANet.datasets import cityscapes
+from HANet.datasets import mapillary
+from HANet.datasets import kitti
+from HANet.datasets import camvid
+from HANet.datasets import bdd100k
+from HANet.datasets import gtav
 
 import torchvision.transforms as standard_transforms
 
-import transforms.joint_transforms as joint_transforms
-import transforms.transforms as extended_transforms
+import HANet.transforms.joint_transforms as joint_transforms
+import HANet.transforms.transforms as extended_transforms
 from torch.utils.data import DataLoader
 import torch
 
