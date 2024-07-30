@@ -9,11 +9,11 @@ from PIL import Image
 from torch.utils import data
 import torch
 import torchvision.transforms as transforms
-import datasets.uniform as uniform
-import datasets.cityscapes_labels as cityscapes_labels
+import HANet.datasets.uniform as uniform
+import HANet.datasets.cityscapes_labels as cityscapes_labels
 import copy
 
-from config import cfg
+from HANet.config import cfg
 
 trainid_to_name = cityscapes_labels.trainId2name
 id_to_trainid = cityscapes_labels.label2trainid
