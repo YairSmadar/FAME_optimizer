@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-from network.mynn import Norm2d, Upsample
-from network.PosEmbedding import PosEmbedding1D, PosEncoding1D
+from HANet.network.mynn import Norm2d, Upsample
+from HANet.network.PosEmbedding import PosEmbedding1D, PosEncoding1D
 
 
 class HANet_Conv(nn.Module):

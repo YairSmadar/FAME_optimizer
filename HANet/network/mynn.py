@@ -3,7 +3,7 @@ Custom Norm wrappers to enable sync BN, regular BN and for weight initialization
 """
 import torch.nn as nn
 import torch
-from config import cfg
+from HANet.config import cfg
 
 def Norm2d(in_channels):
     """

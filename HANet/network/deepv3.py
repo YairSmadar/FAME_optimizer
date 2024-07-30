@@ -26,10 +26,10 @@
 import logging
 import torch
 from torch import nn
-from network import Resnet
-from network.PosEmbedding import PosEmbedding2D
-from network.HANet import HANet_Conv
-from network.mynn import initialize_weights, Norm2d, Upsample, freeze_weights, unfreeze_weights, RandomPosVal_Masking, RandomVal_Masking, Zero_Masking, RandomPosZero_Masking
+from HANet.network import Resnet
+from HANet.network.PosEmbedding import PosEmbedding2D
+from HANet.network.HANet import HANet_Conv
+from HANet.network.mynn import initialize_weights, Norm2d, Upsample, freeze_weights, unfreeze_weights, RandomPosVal_Masking, RandomVal_Masking, Zero_Masking, RandomPosZero_Masking
 
 
 import torchvision.models as models
@@ -80,10 +80,11 @@ class _AtrousSpatialPyramidPoolingModule(nn.Module):
         self.features = torch.nn.ModuleList(self.features)
 
         # img level features
-        self.img_pooling = nn.AdaptiveAvgPool2d(1)
+        self.img_pooling = nn.AdaptiveAvgPool2d(2)
         self.img_conv = nn.Sequential(
             nn.Conv2d(in_dim, 256, kernel_size=1, bias=False),
-            Norm2d(256), nn.ReLU(inplace=True))
+            Norm2d(256), nn.ReLU(inplace=True),
+        nn.AdaptiveAvgPool2d(1))
 
     def forward(self, x):
         x_size = x.size()
