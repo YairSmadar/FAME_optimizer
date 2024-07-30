@@ -38,7 +38,7 @@ from skimage.restoration import denoise_bilateral
 import torch
 from PIL import Image, ImageEnhance
 import torchvision.transforms as torch_tr
-from config import cfg
+from HANet.config import cfg
 from scipy.ndimage.interpolation import shift
 
 from skimage.segmentation import find_boundaries
@@ -157,7 +157,7 @@ class RandomGaussianBlur(object):
     """
     def __call__(self, img):
         sigma = 0.15 + random.random() * 1.15
-        blurred_img = gaussian(np.array(img), sigma=sigma, multichannel=True)
+        blurred_img = gaussian(np.array(img), sigma=sigma)
         blurred_img *= 255
         return Image.fromarray(blurred_img.astype(np.uint8))
 
