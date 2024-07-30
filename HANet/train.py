@@ -619,7 +619,7 @@ def visualize_pos(writer, pos_maps, iteration):
             else:  # pos embedding
                 pos_embedding = torch.cat((torch.ones(1, H, D).cuda(), torch.sigmoid(pos_embedding * 20),
                                            torch.sigmoid(pos_embedding * 20)), 0)
-            pos_embedding = vutils.make_grid(pos_embedding, padding=5, normalize=False, range=(0, 1))
+            pos_embedding = vutils.make_grid(pos_embedding, padding=5, normalize=False, value_range=(0, 1))
             writer.add_image(stage + '/Pos/layer-' + str(i) + '-' + str(j), pos_embedding, iteration)
 
 
@@ -655,7 +655,7 @@ def visualize_attention(writer, attention_map, iteration, threshold=0):
         attention_map_sb = attention_map_sb[0].transpose(0, 1).unsqueeze(0)  # 1 X H X C X 1,
         attention_map_sb = torch.cat((torch.ones(1, C, C).cuda(), torch.abs(attention_map_sb - 1.0),
                                       torch.abs(attention_map_sb - 1.0)), 0)
-        attention_map_sb = vutils.make_grid(attention_map_sb, padding=5, normalize=False, range=(threshold, 1))
+        attention_map_sb = vutils.make_grid(attention_map_sb, padding=5, normalize=False, value_range=(threshold, 1))
         writer.add_image(stage + '/Attention/Row-wise-' + str(i), attention_map_sb, iteration)
 
 
