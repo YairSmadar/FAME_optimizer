@@ -264,6 +264,7 @@ class CityScapes(data.Dataset):
         img_name = os.path.splitext(os.path.basename(img_path))[0]
 
         mask = np.array(mask)
+        mask = mask.astype(np.int64)
         mask_copy = mask.copy()
         for k, v in id_to_trainid.items():
             mask_copy[mask == k] = v
@@ -458,6 +459,7 @@ class CityScapesUniform(data.Dataset):
         img_name = os.path.splitext(os.path.basename(img_path))[0]
 
         mask = np.array(mask)
+        mask = mask.astype(np.int64)
         mask_copy = mask.copy()
         for k, v in id_to_trainid.items():
             mask_copy[mask == k] = v
@@ -775,6 +777,7 @@ class CityScapesWithPos(data.Dataset):
         img_name = os.path.splitext(os.path.basename(img_path))[0]
 
         mask = np.array(mask)
+        mask = mask.astype(np.int64)
         mask_copy = mask.copy()
         for k, v in id_to_trainid.items():
             mask_copy[mask == k] = v
