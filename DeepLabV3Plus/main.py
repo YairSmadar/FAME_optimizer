@@ -1,3 +1,7 @@
+import json
+from copy import copy
+
+import wandb
 from tqdm import tqdm
 import network
 import utils
@@ -5,6 +9,10 @@ import os
 import random
 import argparse
 import numpy as np
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from minREV.optmizerAd import FAME
+
 
 from torch.utils import data
 from datasets import VOCSegmentation, Cityscapes
@@ -93,6 +101,13 @@ def get_argparser():
                         help='env for visdom')
     parser.add_argument("--vis_num_samples", type=int, default=8,
                         help='number of samples for visualization (default: 8)')
+
+    parser.add_argument('--optimizer', type=str, default='sgd', help='Optimizer to use')
+    parser.add_argument('--beta3', default=0.3)
+    parser.add_argument('--beta4', default=0.7)
+    parser.add_argument('--config', default='train_config.json')
+    parser.add_argument('--pretrained_backbone', action='store_true', default=False)
+
     return parser
 
 
@@ -208,8 +223,61 @@ def validate(opts, model, loader, device, metrics, ret_samples_ids=None):
     return score, ret_samples
 
 
+def set_seed(seed):
+    np.random.seed(seed)
+    torch.random.manual_seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+def generate_wandb_name(args):
+    name = f"model-{args.model}"
+    name += f"_dataset-{args.dataset}"
+    name += f"_optim-{args.optimizer}"
+
+    if args.opt == 'fame':
+        name += f"_b3-{args.beta3}"
+        name += f"_b4-{args.beta4}"
+
+    name += f'_seed-{args.seed}'
+
+    return name
+
+
+def apply_config(args: argparse.Namespace, config_path: str):
+    """Overwrite the values in an arguments object by values of namesake
+    keys in a JSON config file.
+
+    :param args: The arguments object
+    :param config_path: the path to a config JSON file.
+    """
+    config_path = copy(config_path)
+    if config_path:
+        # Opening JSON file
+        f = open(config_path)
+        config_overwrite = json.load(f)
+        for k, v in config_overwrite.items():
+            if k.startswith('_'):
+                continue
+            setattr(args, k, v)
+
+
 def main():
     opts = get_argparser().parse_args()
+    apply_config(opts, opts.config)
+    wandb_name = generate_wandb_name(opts)
+    if opts.use_wandb:
+        wandb.init(project="FAME_optimizer",
+                   entity="the-smadars",
+                   name=wandb_name,
+                   config=opts)
+        wandb.run.summary["best_mean_IoU"] = 0
+
+
+    set_seed(opts.seed)
+
     if opts.dataset.lower() == 'voc':
         opts.num_classes = 21
     elif opts.dataset.lower() == 'cityscapes':
@@ -244,7 +312,8 @@ def main():
           (opts.dataset, len(train_dst), len(val_dst)))
 
     # Set up model (all models are 'constructed at network.modeling)
-    model = network.modeling.__dict__[opts.model](num_classes=opts.num_classes, output_stride=opts.output_stride)
+    model = network.modeling.__dict__[opts.model](num_classes=opts.num_classes, output_stride=opts.output_stride,
+                                                  pretrained_backbone=opts.pretrained_backbone)
     if opts.separable_conv and 'plus' in opts.model:
         network.convert_to_separable_conv(model.classifier)
     utils.set_bn_momentum(model.backbone, momentum=0.01)
@@ -252,11 +321,18 @@ def main():
     # Set up metrics
     metrics = StreamSegMetrics(opts.num_classes)
 
-    # Set up optimizer
-    optimizer = torch.optim.SGD(params=[
-        {'params': model.backbone.parameters(), 'lr': 0.1 * opts.lr},
-        {'params': model.classifier.parameters(), 'lr': opts.lr},
-    ], lr=opts.lr, momentum=0.9, weight_decay=opts.weight_decay)
+    if opts.optimizer == 'sgd':
+        optimizer = torch.optim.SGD(params=[
+            {'params': model.backbone.parameters(), 'lr': 0.1 * opts.lr},
+            {'params': model.classifier.parameters(), 'lr': opts.lr},
+        ], lr=opts.lr, momentum=0.9, weight_decay=opts.weight_decay)
+    elif opts.optimizer == 'fame':
+        optimizer = FAME(model.parameters(), lr=opts.lr, beta3=opts.beta3, beta4=opts.beta4, eps=opts.opt_eps,
+                         weight_decay=opts.weight_decay)
+    elif opts.optimizer == 'adam':
+        optimizer = torch.optim.Adam(params=model.parameters(), lr=opts.lr, weight_decay=opts.weight_decay)
+    else:
+        raise ValueError('Unknown optimizer: %s' % opts.optimizer)
     # optimizer = torch.optim.SGD(params=model.parameters(), lr=opts.lr, momentum=0.9, weight_decay=opts.weight_decay)
     # torch.optim.lr_scheduler.StepLR(optimizer, step_size=opts.lr_decay_step, gamma=opts.lr_decay_factor)
     if opts.lr_policy == 'poly':
@@ -360,6 +436,20 @@ def main():
                     best_score = val_score['Mean IoU']
                     save_ckpt('checkpoints/best_%s_%s_os%d.pth' %
                               (opts.model, opts.dataset, opts.output_stride))
+
+                if opts.use_wandb:
+
+                    # save model
+                    if val_score['Mean IoU'] > wandb.run.summary["best_mean_IoU"]:
+                        torch.save(model.state_dict(), os.path.join('/home/yair/models/fame', wandb_name))
+
+                    wandb.log({
+                        "mean_IoU": val_score['Mean IoU']
+                               })
+
+                    wandb.run.summary["best_test_accuracy"] = \
+                        val_score['Mean IoU'] if val_score['Mean IoU'] > wandb.run.summary["best_mean_IoU"] \
+                            else wandb.run.summary["best_mean_IoU"]
 
                 if vis is not None:  # visualize validation score and samples
                     vis.vis_scalar("[Val] Overall Acc", cur_itrs, val_score['Overall Acc'])

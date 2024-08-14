@@ -991,7 +991,7 @@ def validate(model, loader, loss_fn, args, amp_autocast=suppress, log_suffix='',
     if args.use_wandb:
 
         # save model
-        if acc1 > wandb.run.summary["best_test_accuracy"]:
+        if top1_m.avg > wandb.run.summary["best_test_accuracy"]:
             torch.save(model.state_dict(), os.path.join('/home/yair/models/fame', wandb_name))
 
         wandb.log({
