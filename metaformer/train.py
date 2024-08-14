@@ -570,6 +570,7 @@ def main():
     else:
         optimizer = FAME(model.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.opt_eps,
                          weight_decay=args.weight_decay)
+    print(f"optimizer lr = {optimizer.defaults['lr']}")
 
     # setup automatic mixed-precision (AMP) loss scaling and op casting
     amp_autocast = suppress  # do nothing
