@@ -564,6 +564,7 @@ def main():
         assert has_functorch, "functorch is needed for --aot-autograd"
         model = memory_efficient_fusion(model)
 
+    print(f"!!!!!!!!! args.lr = {args.lr} !!!!!!!!!!!")
     if args.opt is not 'fame':
         optimizer = create_optimizer_v2(model, **optimizer_kwargs(cfg=args))
     else:
