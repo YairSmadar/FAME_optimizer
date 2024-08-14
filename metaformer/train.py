@@ -40,6 +40,15 @@ import argparse
 import logging
 import os
 import time
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import json
+from copy import copy
+
+import numpy as np
+
+from minREV.optmizerAd import FAME
 from collections import OrderedDict
 from contextlib import suppress
 from datetime import datetime
@@ -356,6 +365,9 @@ group.add_argument('--use-multi-epochs-loader', action='store_true', default=Fal
 group.add_argument('--log-wandb', action='store_true', default=False,
                     help='log training and validation metrics to wandb')
 
+group.add_argument('--beta3', default=0.3)
+group.add_argument('--beta4', default=0.7)
+group.add_argument('--config', default='train_config.json')
 
 def _parse_args():
     # Do we have a config file to parse?
@@ -372,6 +384,47 @@ def _parse_args():
     # Cache the args as a text string to save them in the output dir later
     args_text = yaml.safe_dump(args.__dict__, default_flow_style=False)
     return args, args_text
+
+
+def set_seed(seed):
+    np.random.seed(seed)
+    torch.random.manual_seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+def generate_wandb_name(args):
+    name = f"model-{args.model}"
+    name += f"_dataset-{args.dataset}"
+    name += f"_optim-{args.opt}"
+
+    if args.optimizer == 'fame':
+        name += f"_b3-{args.beta3}"
+        name += f"_b4-{args.beta4}"
+
+    name += f'_seed-{args.seed}'
+
+    return name
+
+
+def apply_config(args: argparse.Namespace, config_path: str):
+    """Overwrite the values in an arguments object by values of namesake
+    keys in a JSON config file.
+
+    :param args: The arguments object
+    :param config_path: the path to a config JSON file.
+    """
+    config_path = copy(config_path)
+    if config_path:
+        # Opening JSON file
+        f = open(config_path)
+        config_overwrite = json.load(f)
+        for k, v in config_overwrite.items():
+            if k.startswith('_'):
+                continue
+            setattr(args, k, v)
 
 
 def main():
@@ -399,6 +452,16 @@ def main():
         _logger.info('Training with a single process on 1 GPUs.')
     assert args.rank >= 0
 
+    apply_config(args, args.config)
+    wandb_name = generate_wandb_name(args)
+    if args.use_wandb:
+        wandb.init(project="FAME_optimizer",
+                   entity="the-smadars",
+                   name=wandb_name,
+                   config=args)
+        wandb.run.summary["best_test_accuracy"] = 0
+        wandb.run.summary["best_test_loss"] = 999
+
     if args.rank == 0 and args.log_wandb:
         if has_wandb:
             wandb.init(project=args.experiment, config=args)
@@ -423,6 +486,8 @@ def main():
                         "Install NVIDA apex or upgrade to PyTorch 1.6")
 
     utils.random_seed(args.seed, args.rank)
+
+    set_seed(args.seed)
 
     if args.fuser:
         utils.set_jit_fuser(args.fuser)
@@ -501,7 +566,11 @@ def main():
         assert has_functorch, "functorch is needed for --aot-autograd"
         model = memory_efficient_fusion(model)
 
-    optimizer = create_optimizer_v2(model, **optimizer_kwargs(cfg=args))
+    if args.opt is not 'fame':
+        optimizer = create_optimizer_v2(model, **optimizer_kwargs(cfg=args))
+    else:
+        optimizer = FAME(model.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.opt_eps,
+                         weight_decay=args.weight_decay)
 
     # setup automatic mixed-precision (AMP) loss scaling and op casting
     amp_autocast = suppress  # do nothing
@@ -712,13 +781,13 @@ def main():
                     _logger.info("Distributing BatchNorm running means and vars")
                 utils.distribute_bn(model, args.world_size, args.dist_bn == 'reduce')
 
-            eval_metrics = validate(model, loader_eval, validate_loss_fn, args, amp_autocast=amp_autocast)
+            eval_metrics = validate(model, loader_eval, validate_loss_fn, args, amp_autocast=amp_autocast, wandb_name=wandb_name)
 
             if model_ema is not None and not args.model_ema_force_cpu:
                 if args.distributed and args.dist_bn in ('broadcast', 'reduce'):
                     utils.distribute_bn(model_ema, args.world_size, args.dist_bn == 'reduce')
                 ema_eval_metrics = validate(
-                    model_ema.module, loader_eval, validate_loss_fn, args, amp_autocast=amp_autocast, log_suffix=' (EMA)')
+                    model_ema.module, loader_eval, validate_loss_fn, args, amp_autocast=amp_autocast, log_suffix=' (EMA)', wandb_name=wandb_name)
                 eval_metrics = ema_eval_metrics
 
             if lr_scheduler is not None:
@@ -860,7 +929,7 @@ def train_one_epoch(
     return OrderedDict([('loss', losses_m.avg)])
 
 
-def validate(model, loader, loss_fn, args, amp_autocast=suppress, log_suffix=''):
+def validate(model, loader, loss_fn, args, amp_autocast=suppress, log_suffix='', wandb_name=''):
     batch_time_m = utils.AverageMeter()
     losses_m = utils.AverageMeter()
     top1_m = utils.AverageMeter()
@@ -920,6 +989,20 @@ def validate(model, loader, loss_fn, args, amp_autocast=suppress, log_suffix='')
                         loss=losses_m, top1=top1_m, top5=top5_m))
 
     metrics = OrderedDict([('loss', losses_m.avg), ('top1', top1_m.avg), ('top5', top5_m.avg)])
+
+    if args.use_wandb:
+
+        # save model
+        if acc1 > wandb.run.summary["best_test_accuracy"]:
+            torch.save(model.state_dict(), os.path.join('/home/yair/models/fame', wandb_name))
+
+        wandb.log({
+                   "test accuracy": top1_m.avg
+                   })
+
+        wandb.run.summary["best_test_accuracy"] = \
+            top1_m.avg if top1_m.avg > wandb.run.summary["best_test_accuracy"] \
+                else wandb.run.summary["best_test_accuracy"]
 
     return metrics
 

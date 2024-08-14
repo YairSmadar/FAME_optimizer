@@ -1,0 +1,20 @@
+{
+    "optimizer": "adam",
+    "model": "caformer_s18",
+    "beta3": 0.3,
+    "beta4": 0.7,
+    "opt-eps": 1e-5,
+    "lr": 0.001,
+    "weight_decay": 0,
+    "warmup_epochs": 20,
+    "grad_accum_steps": 4,
+    "drop-path": 0.15,
+    "head-dropout": 0.0,
+    "dataset": "imagenet",
+    "num_workers": 12,
+    "data_dir": "/dev/shm/data/imagenet1k/",
+    "use_wandb": true,
+    "seed": 1,
+    "epochs": 300,
+    "batch_size": 512
+}
