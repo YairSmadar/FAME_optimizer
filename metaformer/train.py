@@ -114,8 +114,7 @@ parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 # Dataset parameters
 group = parser.add_argument_group('Dataset parameters')
 # Keep this argument outside of the dataset group because it is positional.
-parser.add_argument('data_dir', metavar='DIR',
-                    help='path to dataset', required=False)
+parser.add_argument('--data_dir', help='path to dataset', required=False)
 group.add_argument('--dataset', '-d', metavar='NAME', default='',
                     help='dataset type (default: ImageFolder/ImageTar if empty)')
 group.add_argument('--train-split', metavar='NAME', default='train',
