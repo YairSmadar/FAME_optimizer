@@ -551,8 +551,8 @@ def main():
             # Apex SyncBN used with Apex AMP
             # WARNING this won't currently work with models using BatchNormAct2d
             model = convert_syncbn_model(model)
-        else:
-            model = convert_sync_batchnorm(model)
+        # else:
+        #     model = convert_sync_batchnorm(model)
         if args.local_rank == 0:
             _logger.info(
                 'Converted model to use Synchronized BatchNorm. WARNING: You may have issues if using '
@@ -732,10 +732,10 @@ def main():
         # else:
         train_loss_fn = SoftTargetCrossEntropy()
     elif args.smoothing:
-        if args.bce_loss:
-            train_loss_fn = BinaryCrossEntropy(smoothing=args.smoothing, target_threshold=args.bce_target_thresh)
-        else:
-            train_loss_fn = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
+        # if args.bce_loss:
+        #     train_loss_fn = BinaryCrossEntropy(smoothing=args.smoothing, target_threshold=args.bce_target_thresh)
+        # else:
+        train_loss_fn = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
     else:
         train_loss_fn = nn.CrossEntropyLoss()
     train_loss_fn = train_loss_fn.cuda()
