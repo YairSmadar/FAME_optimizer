@@ -25,7 +25,6 @@ import torch.nn.functional as F
 from timm.models.layers import trunc_normal_, DropPath
 from timm.models.registry import register_model
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from timm.models.layers.helpers import to_2tuple
 
 
 def _cfg(url='', **kwargs):
@@ -436,6 +435,24 @@ class Mlp(nn.Module):
         in_features = dim
         out_features = out_features or in_features
         hidden_features = int(mlp_ratio * in_features)
+        from itertools import repeat
+        import collections.abc
+
+        # From PyTorch internals
+        def _ntuple(n):
+            def parse(x):
+                if isinstance(x, collections.abc.Iterable):
+                    return x
+                return tuple(repeat(x, n))
+
+            return parse
+
+        to_1tuple = _ntuple(1)
+        to_2tuple = _ntuple(2)
+        to_3tuple = _ntuple(3)
+        to_4tuple = _ntuple(4)
+        to_ntuple = _ntuple
+
         drop_probs = to_2tuple(drop)
 
         self.fc1 = nn.Linear(in_features, hidden_features, bias=bias)
