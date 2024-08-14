@@ -61,10 +61,10 @@ from torch.nn.parallel import DistributedDataParallel as NativeDDP
 
 from timm import utils
 from timm.data import create_dataset, create_loader, resolve_data_config, Mixup, FastCollateMixup, AugMixDataset
-from timm.loss import JsdCrossEntropy, SoftTargetCrossEntropy, BinaryCrossEntropy, \
+from timm.loss import JsdCrossEntropy, SoftTargetCrossEntropy, \
     LabelSmoothingCrossEntropy
 from timm.models import create_model, safe_model_name, resume_checkpoint, load_checkpoint, \
-    convert_splitbn_model, convert_sync_batchnorm, model_parameters, set_fast_norm
+    convert_splitbn_model, model_parameters
 from timm.optim import create_optimizer_v2, optimizer_kwargs
 from timm.scheduler import create_scheduler
 # from timm.utils import ApexScaler, NativeScaler
@@ -491,8 +491,8 @@ def main():
 
     if args.fuser:
         utils.set_jit_fuser(args.fuser)
-    if args.fast_norm:
-        set_fast_norm()
+    # if args.fast_norm:
+    #     set_fast_norm()
 
     create_model_args = dict(
         model_name=args.model,
@@ -534,9 +534,9 @@ def main():
         num_aug_splits = args.aug_splits
 
     # enable split bn (separate bn stats per batch-portion)
-    if args.split_bn:
-        assert num_aug_splits > 1 or args.resplit
-        model = convert_splitbn_model(model, max(num_aug_splits, 2))
+    # if args.split_bn:
+    #     assert num_aug_splits > 1 or args.resplit
+    #     model = convert_splitbn_model(model, max(num_aug_splits, 2))
 
     # move model to GPU, enable channels last layout if set
     model.cuda()
@@ -727,10 +727,10 @@ def main():
         train_loss_fn = JsdCrossEntropy(num_splits=num_aug_splits, smoothing=args.smoothing)
     elif mixup_active:
         # smoothing is handled with mixup target transform which outputs sparse, soft targets
-        if args.bce_loss:
-            train_loss_fn = BinaryCrossEntropy(target_threshold=args.bce_target_thresh)
-        else:
-            train_loss_fn = SoftTargetCrossEntropy()
+        # if args.bce_loss:
+        #     train_loss_fn = BinaryCrossEntropy(target_threshold=args.bce_target_thresh)
+        # else:
+        train_loss_fn = SoftTargetCrossEntropy()
     elif args.smoothing:
         if args.bce_loss:
             train_loss_fn = BinaryCrossEntropy(smoothing=args.smoothing, target_threshold=args.bce_target_thresh)
