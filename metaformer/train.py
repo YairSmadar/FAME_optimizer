@@ -398,7 +398,7 @@ def generate_wandb_name(args):
     name += f"_dataset-{args.dataset}"
     name += f"_optim-{args.opt}"
 
-    if args.optimizer == 'fame':
+    if args.opt == 'fame':
         name += f"_b3-{args.beta3}"
         name += f"_b4-{args.beta4}"
 

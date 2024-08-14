@@ -1,5 +1,5 @@
 {
-    "optimizer": "adam",
+    "opt": "adam",
     "model": "caformer_s18",
     "beta3": 0.3,
     "beta4": 0.7,
@@ -14,7 +14,7 @@
     "num_workers": 12,
     "data_dir": "/dev/shm/data/imagenet1k/",
     "use_wandb": true,
-    "seed": 1,
+    "seed": 0,
     "epochs": 300,
-    "batch_size": 512
+    "batch_size": 64
 }
