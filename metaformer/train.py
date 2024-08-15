@@ -565,11 +565,13 @@ def main():
         model = memory_efficient_fusion(model)
 
     print(f"!!!!!!!!! args.lr = {args.lr} !!!!!!!!!!!")
-    if args.opt is not 'fame':
-        optimizer = create_optimizer_v2(model, **optimizer_kwargs(cfg=args))
-    else:
+    # create optimizer
+    if 'fame' in args.opt:
         optimizer = FAME(model.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.opt_eps,
                          weight_decay=args.weight_decay)
+    else:
+        optimizer = create_optimizer_v2(model, **optimizer_kwargs(cfg=args))
+
     print(f"optimizer lr = {optimizer.defaults['lr']}")
 
     # setup automatic mixed-precision (AMP) loss scaling and op casting
