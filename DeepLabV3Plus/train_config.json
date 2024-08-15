@@ -6,7 +6,7 @@
     "pretrained_backbone": true,
     "beta3": 0.3,
     "beta4": 0.7,
-    "opt-eps": 1e-5,
+    "opt_eps": 1e-5,
     "lr": 0.005,
     "weight_decay": 0,
     "dataset": "cityscapes",
