@@ -441,7 +441,7 @@ def main():
 
                     # save model
                     if val_score['Mean IoU'] > wandb.run.summary["best_mean_IoU"]:
-                        torch.save(model.state_dict(), os.path.join('/home/porat/yairs/models/fame', wandb_name))
+                        torch.save(model.state_dict(), os.path.join('/home/yair/models/fame', wandb_name))
 
                     wandb.log({
                         "mean_IoU": val_score['Mean IoU']
