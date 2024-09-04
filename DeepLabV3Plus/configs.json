@@ -1,0 +1,36 @@
+{
+    "gpu_number": "2",
+    "train_script": "main.py",
+    "config_file_path": "train_config.json",
+
+    "train_configs": 
+    [
+            {
+                "optimizer": "adam",
+                "batch_size": 8,
+                "lr": 0.0001,
+                "total_itrs": 30e3,
+                "model": "deeplabv3plus_hrnetv2_48",
+                "pretrained_backbone": false,
+                "seed": 0
+            },
+            {
+                "optimizer": "fame",
+                "lr": 0.0001,
+                "batch_size": 8,
+                "total_itrs": 30e3,
+                "pretrained_backbone": false,
+                "model": "deeplabv3plus_hrnetv2_48",
+                "seed": 0
+            },
+            {
+                "optimizer": "sgd",
+                "pretrained_backbone": false,
+                "lr": 0.01,
+                "batch_size": 8,
+                "total_itrs": 30e3,
+                "model": "deeplabv3plus_hrnetv2_48",
+                "seed": 0
+            }
+    ]
+}
