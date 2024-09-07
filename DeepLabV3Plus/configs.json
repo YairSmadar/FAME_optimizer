@@ -12,7 +12,8 @@
                 "total_itrs": 30e3,
                 "pretrained_backbone": false,
                 "model": "deeplabv3_xception",
-                "seed": 0
+                "seed": 0,
+                "crop_size": 512
             },
             {
                 "optimizer": "fame",
@@ -21,7 +22,8 @@
                 "total_itrs": 30e3,
                 "pretrained_backbone": false,
                 "model": "deeplabv3_xception",
-                "seed": 0
+                "seed": 0,
+                "crop_size": 512
             },
             {
                 "optimizer": "sgd",
@@ -30,7 +32,8 @@
                 "batch_size": 1,
                 "total_itrs": 30e3,
                 "model": "deeplabv3_xception",
-                "seed": 0
+                "seed": 0,
+                "crop_size": 512
             }
     ]
 }
