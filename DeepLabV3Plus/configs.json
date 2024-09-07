@@ -1,5 +1,5 @@
 {
-    "gpu_number": "0",
+    "gpu_number": "3",
     "train_script": "main.py",
     "config_file_path": "train_config.json",
 
