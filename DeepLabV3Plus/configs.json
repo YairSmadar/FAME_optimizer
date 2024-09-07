@@ -1,30 +1,18 @@
 {
-    "gpu_number": "1",
+    "gpu_number": "0",
     "train_script": "main.py",
     "config_file_path": "train_config.json",
 
     "train_configs": 
     [
             {
-                "optimizer": "adam",
-                "lr": 0.0001,
-                "batch_size": 2,
-                "val_batch_size": 2,
-                "total_itrs": 30e3,
-                "pretrained_backbone": false,
-                "model": "deeplabv3plus_hrnetv2_32",
-                "seed": 0,
-                "crop_size": 512,
-                "crop_val": true
-            },
-            {
                 "optimizer": "fame",
                 "lr": 0.0001,
-                "batch_size": 2,
-                "val_batch_size": 2,
+                "batch_size": 4,
+                "val_batch_size": 4,
                 "total_itrs": 30e3,
                 "pretrained_backbone": false,
-                "model": "deeplabv3plus_hrnetv2_32",
+                "model": "deeplabv3plus_hrnetv2_48",
                 "seed": 0,
                 "crop_size": 512,
                 "crop_val": true
@@ -33,10 +21,10 @@
                 "optimizer": "sgd",
                 "pretrained_backbone": false,
                 "lr": 0.01,
-                "batch_size": 2,
-                "val_batch_size": 2,
+                "batch_size": 4,
+                "val_batch_size": 4,
                 "total_itrs": 30e3,
-                "model": "deeplabv3plus_hrnetv2_32",
+                "model": "deeplabv3plus_hrnetv2_48",
                 "seed": 0,
                 "crop_size": 512,
                 "crop_val": true
