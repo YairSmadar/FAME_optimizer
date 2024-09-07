@@ -12,10 +12,10 @@
                 "val_batch_size": 2,
                 "total_itrs": 30e3,
                 "pretrained_backbone": false,
-                "model": "deeplabv3_hrnetv2_48",
+                "model": "deeplabv3plus_hrnetv2_48",
                 "seed": 0,
-                "crop_size": 512,
-                "crop_val": false
+                "crop_size": 384,
+                "crop_val": true
             },
             {
                 "optimizer": "fame",
@@ -24,10 +24,10 @@
                 "val_batch_size": 2,
                 "total_itrs": 30e3,
                 "pretrained_backbone": false,
-                "model": "deeplabv3_hrnetv2_48",
+                "model": "deeplabv3plus_hrnetv2_48",
                 "seed": 0,
-                "crop_size": 512,
-                "crop_val": false
+                "crop_size": 384,
+                "crop_val": true
             },
             {
                 "optimizer": "sgd",
@@ -36,10 +36,10 @@
                 "batch_size": 2,
                 "val_batch_size": 2,
                 "total_itrs": 30e3,
-                "model": "deeplabv3_hrnetv2_48",
+                "model": "deeplabv3plus_hrnetv2_48",
                 "seed": 0,
-                "crop_size": 512,
-                "crop_val": false
+                "crop_size": 384,
+                "crop_val": true
             }
     ]
 }
