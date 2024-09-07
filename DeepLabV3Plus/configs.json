@@ -6,15 +6,6 @@
     "train_configs": 
     [
             {
-                "optimizer": "adam",
-                "batch_size": 8,
-                "lr": 0.0001,
-                "total_itrs": 30e3,
-                "model": "deeplabv3plus_hrnetv2_48",
-                "pretrained_backbone": false,
-                "seed": 0
-            },
-            {
                 "optimizer": "fame",
                 "lr": 0.0001,
                 "batch_size": 8,
