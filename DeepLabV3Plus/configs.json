@@ -8,38 +8,38 @@
             {
                 "optimizer": "adam",
                 "lr": 0.0001,
-                "batch_size": 2,
-                "val_batch_size": 2,
+                "batch_size": 4,
+                "val_batch_size": 4,
                 "total_itrs": 30e3,
                 "pretrained_backbone": false,
                 "model": "deeplabv3plus_hrnetv2_48",
                 "seed": 0,
-                "crop_size": 384,
-                "crop_val": true
+                "crop_size": 768,
+                "crop_val": false
             },
             {
                 "optimizer": "fame",
                 "lr": 0.0001,
-                "batch_size": 2,
-                "val_batch_size": 2,
+                "batch_size": 4,
+                "val_batch_size": 4,
                 "total_itrs": 30e3,
                 "pretrained_backbone": false,
                 "model": "deeplabv3plus_hrnetv2_48",
                 "seed": 0,
-                "crop_size": 384,
-                "crop_val": true
+                "crop_size": 768,
+                "crop_val": false
             },
             {
                 "optimizer": "sgd",
                 "pretrained_backbone": false,
                 "lr": 0.01,
-                "batch_size": 2,
-                "val_batch_size": 2,
+                "batch_size": 4,
+                "val_batch_size": 4,
                 "total_itrs": 30e3,
                 "model": "deeplabv3plus_hrnetv2_48",
                 "seed": 0,
-                "crop_size": 384,
-                "crop_val": true
+                "crop_size": 768,
+                "crop_val": false
             }
     ]
 }
