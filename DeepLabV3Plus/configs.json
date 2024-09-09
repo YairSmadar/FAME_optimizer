@@ -12,7 +12,7 @@
                 "val_batch_size": 4,
                 "total_itrs": 30e3,
                 "pretrained_backbone": false,
-                "model": "deeplabv3plus_hrnetv2_48",
+                "model": "deeplabv3plus_hrnetv2_32",
                 "seed": 0,
                 "crop_size": 768,
                 "crop_val": false
@@ -24,7 +24,7 @@
                 "val_batch_size": 4,
                 "total_itrs": 30e3,
                 "pretrained_backbone": false,
-                "model": "deeplabv3plus_hrnetv2_48",
+                "model": "deeplabv3plus_hrnetv2_32",
                 "seed": 0,
                 "crop_size": 768,
                 "crop_val": false
@@ -36,7 +36,7 @@
                 "batch_size": 4,
                 "val_batch_size": 4,
                 "total_itrs": 30e3,
-                "model": "deeplabv3plus_hrnetv2_48",
+                "model": "deeplabv3plus_hrnetv2_32",
                 "seed": 0,
                 "crop_size": 768,
                 "crop_val": false
