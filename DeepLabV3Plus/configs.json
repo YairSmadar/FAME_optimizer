@@ -1,12 +1,12 @@
 {
-    "gpu_number": "2",
+    "gpu_number": "3",
     "train_script": "main.py",
     "config_file_path": "train_config.json",
 
     "train_configs": 
     [
             {
-                "gpu_id": "2",
+                "gpu_id": "3",
                 "optimizer": "adam",
                 "lr": 0.0001,
                 "batch_size": 2,
@@ -19,7 +19,7 @@
                 "crop_val": false
             },
             {
-                "gpu_id": "2",
+                "gpu_id": "3",
                 "optimizer": "fame",
                 "lr": 0.0001,
                 "batch_size": 2,
@@ -32,7 +32,7 @@
                 "crop_val": false
             },
             {
-                "gpu_id": "2",
+                "gpu_id": "3",
                 "optimizer": "sgd",
                 "pretrained_backbone": false,
                 "lr": 0.01,
