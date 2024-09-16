@@ -10,6 +10,8 @@
   "beta4": 0.7,
   "eps": 1e-8,
   "epochs": 200,
+  "weight_decay": 1e-4,
+  "momentum": 0.9,
   "seed": 0,
   "use_wandb": true,
   "num_classes": 100

@@ -46,6 +46,7 @@ def parse_args():
     parser.add_argument("--use_wandb", default=False)
     parser.add_argument("--load", default=None, help="Path to init weights")
     parser.add_argument("--eps", default=1e-8, help="epsilon for fame optimizer")
+    parser.add_argument("--momentum", default=0)
 
     parser.add_argument("--config", type=str)
 
@@ -319,7 +320,7 @@ if __name__ == '__main__':
     if args.optimizer == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, eps=args.eps)
     elif args.optimizer == "sgd":
-        optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum)
     elif args.optimizer == "fame":
         optimizer = FAME(model.parameters(), lr=args.lr, beta3=args.beta3, beta4=args.beta4, eps=args.eps, weight_decay=args.weight_decay)
     else:
