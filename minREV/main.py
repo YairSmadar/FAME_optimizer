@@ -12,7 +12,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.cuda.amp import GradScaler
 
-from minREV.scedulers import SchedulerManager
+from scedulers import SchedulerManager
 from optmizerAd import FAME
 
 import wandb
