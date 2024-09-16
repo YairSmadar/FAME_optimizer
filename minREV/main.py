@@ -12,6 +12,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.cuda.amp import GradScaler
 
+from minREV.scedulers import SchedulerManager
 from optmizerAd import FAME
 
 import wandb
@@ -325,7 +326,10 @@ if __name__ == '__main__':
     else:
         raise Exception(f"no {args.optimizer} optimizer")
 
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
+    scheduler_manager = SchedulerManager(args.scheduler_name, args.epochs)
+    scheduler_manager.set_schedulers(optimizer)
+
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
     scaler = GradScaler()
 
     if args.use_wandb:
@@ -358,6 +362,6 @@ if __name__ == '__main__':
                 test_loss if test_loss < wandb.run.summary["best_test_loss"] \
                     else wandb.run.summary["best_test_loss"]
 
-        scheduler.step(epoch - 1)
+        scheduler_manager.schedulers_step(epoch)
 
     # based on https://github.com/kentaroy47/vision-transformers-cifar10

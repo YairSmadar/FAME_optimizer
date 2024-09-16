@@ -1,10 +1,11 @@
 {
-  "bs": 128,
+  "bs": 32,
   "lr": 0.0001,
   "model": "vit",
   "model_name": "RevVit",
-  "optimizer": "adam",
+  "optimizer": "fame",
   "dataset": "CIFAR100",
+  "scheduler_name": "default",
   "beta3": 0.3,
   "beta4": 0.7,
   "eps": 1e-8,
