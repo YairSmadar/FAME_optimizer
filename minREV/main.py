@@ -139,10 +139,9 @@ def train(epoch):
 
         # standard pytorch AMP training setup
         # scaler also works without amp training.
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
         optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
         train_loss += loss.item()
         _, predicted = outputs.max(1)
