@@ -106,6 +106,7 @@ def parse_args():
 
     return args
 
+
 def apply_config(args: argparse.Namespace, config_path: str):
     """Overwrite the values in an arguments object by values of namesake
     keys in a JSON config file.

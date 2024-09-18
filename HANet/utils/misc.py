@@ -167,26 +167,26 @@ def evaluate_eval(args, net, optimizer, scheduler, val_loss, hist, dump_images, 
     
     torch.cuda.synchronize()
     
-    if optimizer_at is not None:
-        torch.save({
-            'state_dict': net.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'optimizer_at': optimizer_at.state_dict(),
-            'scheduler': scheduler.state_dict(),
-            'scheduler_at': scheduler_at.state_dict(),
-            'epoch': epoch,
-            'mean_iu': mean_iu,
-            'command': ' '.join(sys.argv[1:])
-        }, last_snapshot)
-    else:
-        torch.save({
-            'state_dict': net.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'scheduler': scheduler.state_dict(),
-            'epoch': epoch,
-            'mean_iu': mean_iu,
-            'command': ' '.join(sys.argv[1:])
-        }, last_snapshot)
+    # if optimizer_at is not None:
+    #     torch.save({
+    #         'state_dict': net.state_dict(),
+    #         'optimizer': optimizer.state_dict(),
+    #         'optimizer_at': optimizer_at.state_dict(),
+    #         'scheduler': scheduler.state_dict(),
+    #         'scheduler_at': scheduler_at.state_dict(),
+    #         'epoch': epoch,
+    #         'mean_iu': mean_iu,
+    #         'command': ' '.join(sys.argv[1:])
+    #     }, last_snapshot)
+    # else:
+    #     torch.save({
+    #         'state_dict': net.state_dict(),
+    #         'optimizer': optimizer.state_dict(),
+    #         'scheduler': scheduler.state_dict(),
+    #         'epoch': epoch,
+    #         'mean_iu': mean_iu,
+    #         'command': ' '.join(sys.argv[1:])
+    #     }, last_snapshot)
 
     # update best snapshot
     if mean_iu > args.best_record['mean_iu'] :
@@ -249,7 +249,7 @@ def evaluate_eval(args, net, optimizer, scheduler, val_loss, hist, dump_images, 
 
         # save model
         if mean_iu > wandb.run.summary["best_mean_IoU"]:
-            torch.save(net.state_dict(), os.path.join('/home/porat/yairs/models/fame', wandb_name))
+            torch.save(net.state_dict(), os.path.join('/dev/shm/models/fame', wandb_name))
             wandb.run.summary["best_mean_IoU"] = mean_iu
 
     logging.info('-' * 107)
