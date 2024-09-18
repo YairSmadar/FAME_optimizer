@@ -189,24 +189,24 @@ def evaluate_eval(args, net, optimizer, scheduler, val_loss, hist, dump_images, 
     #     }, last_snapshot)
 
     # update best snapshot
-    if mean_iu > args.best_record['mean_iu'] :
+    # if mean_iu > args.best_record['mean_iu'] :
         # remove old best snapshot
-        if args.best_record['epoch'] != -1:
-            best_snapshot = 'best_epoch_{}_mean-iu_{:.5f}.pth'.format(
-                args.best_record['epoch'], args.best_record['mean_iu'])
-            best_snapshot = os.path.join(args.exp_path, best_snapshot)
-            assert os.path.exists(best_snapshot), \
-                'cant find old snapshot {}'.format(best_snapshot)
-            os.remove(best_snapshot)
+        # if args.best_record['epoch'] != -1:
+        #     best_snapshot = 'best_epoch_{}_mean-iu_{:.5f}.pth'.format(
+        #         args.best_record['epoch'], args.best_record['mean_iu'])
+        #     best_snapshot = os.path.join(args.exp_path, best_snapshot)
+        #     assert os.path.exists(best_snapshot), \
+        #         'cant find old snapshot {}'.format(best_snapshot)
+        #     os.remove(best_snapshot)
 
         
-        # save new best
-        args.best_record['val_loss'] = val_loss.avg
-        args.best_record['epoch'] = epoch
-        args.best_record['acc'] = acc
-        args.best_record['acc_cls'] = acc_cls
-        args.best_record['mean_iu'] = mean_iu
-        args.best_record['fwavacc'] = fwavacc
+        # # save new best
+        # args.best_record['val_loss'] = val_loss.avg
+        # args.best_record['epoch'] = epoch
+        # args.best_record['acc'] = acc
+        # args.best_record['acc_cls'] = acc_cls
+        # args.best_record['mean_iu'] = mean_iu
+        # args.best_record['fwavacc'] = fwavacc
 
         # best_snapshot = 'best_epoch_{}_mean-iu_{:.5f}.pth'.format(
         #     args.best_record['epoch'], args.best_record['mean_iu'])
