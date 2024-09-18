@@ -208,10 +208,10 @@ def evaluate_eval(args, net, optimizer, scheduler, val_loss, hist, dump_images, 
         args.best_record['mean_iu'] = mean_iu
         args.best_record['fwavacc'] = fwavacc
 
-        best_snapshot = 'best_epoch_{}_mean-iu_{:.5f}.pth'.format(
-            args.best_record['epoch'], args.best_record['mean_iu'])
-        best_snapshot = os.path.join(args.exp_path, best_snapshot)
-        shutil.copyfile(last_snapshot, best_snapshot)
+        # best_snapshot = 'best_epoch_{}_mean-iu_{:.5f}.pth'.format(
+        #     args.best_record['epoch'], args.best_record['mean_iu'])
+        # best_snapshot = os.path.join(args.exp_path, best_snapshot)
+        # shutil.copyfile(last_snapshot, best_snapshot)
         
     
         # to_save_dir = os.path.join(args.exp_path, 'best_images')
@@ -249,7 +249,7 @@ def evaluate_eval(args, net, optimizer, scheduler, val_loss, hist, dump_images, 
 
         # save model
         if mean_iu > wandb.run.summary["best_mean_IoU"]:
-            torch.save(net.state_dict(), os.path.join('/dev/shm/models/fame', wandb_name))
+            # torch.save(net.state_dict(), os.path.join('/dev/shm/models/fame', wandb_name))
             wandb.run.summary["best_mean_IoU"] = mean_iu
 
     logging.info('-' * 107)
@@ -263,12 +263,12 @@ def evaluate_eval(args, net, optimizer, scheduler, val_loss, hist, dump_images, 
                             args.best_record['fwavacc'], args.best_record['epoch']))
     logging.info('-' * 107)
 
-    # tensorboard logging of validation phase metrics
-
-    writer.add_scalar('training/acc', acc, curr_iter)
-    writer.add_scalar('training/acc_cls', acc_cls, curr_iter)
-    writer.add_scalar('training/mean_iu', mean_iu, curr_iter)
-    writer.add_scalar('training/val_loss', val_loss.avg, curr_iter)
+    # # tensorboard logging of validation phase metrics
+    #
+    # writer.add_scalar('training/acc', acc, curr_iter)
+    # writer.add_scalar('training/acc_cls', acc_cls, curr_iter)
+    # writer.add_scalar('training/mean_iu', mean_iu, curr_iter)
+    # writer.add_scalar('training/val_loss', val_loss.avg, curr_iter)
 
 
 def print_evaluate_results(hist, iu, dataset=None):
