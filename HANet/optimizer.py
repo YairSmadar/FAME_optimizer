@@ -131,20 +131,20 @@ def get_optimizer_attention(args, net):
             base_params.append(param)
             #print("base", name)
 
-    if args.sgd:
+    if args.optimizer == 'sgd':
         if args.backbone_lr > 0.0:
             optimizer = optim.SGD([
                                     {'params': base_params},
                                     {'params': resnet_params, 'lr':args.backbone_lr}
                                 ],
                                 lr=args.lr,
-                                weight_decay=5e-4, #args.weight_decay,
+                                weight_decay=args.weight_decay, #args.weight_decay,
                                 momentum=args.momentum,
                                 nesterov=False)
         else:
             optimizer = optim.SGD(base_params,
                                 lr=args.lr,
-                                weight_decay=5e-4, #args.weight_decay,
+                                weight_decay=args.weight_decay, #args.weight_decay,
                                 momentum=args.momentum,
                                 nesterov=False)
     elif args.optimizer == 'fame':
