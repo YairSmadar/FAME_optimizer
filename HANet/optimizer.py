@@ -38,20 +38,20 @@ def get_optimizer(args, net):
             if not is_resnet:
                 base_params.append(param)
 
-    if args.sgd:
+    if args.optimizer == 'sgd':
         if args.backbone_lr > 0.0:
             optimizer = optim.SGD([
                                     {'params': base_params},
                                     {'params': resnet_params, 'lr':args.backbone_lr}
                                 ],
                                 lr=args.lr,
-                                weight_decay=5e-4, #args.weight_decay,
+                                weight_decay=args.weight_decay, #args.weight_decay,
                                 momentum=args.momentum,
                                 nesterov=False)
         else:
             optimizer = optim.SGD(param_groups,
                                 lr=args.lr,
-                                weight_decay=5e-4, #args.weight_decay,
+                                weight_decay=args.weight_decay, #args.weight_decay,
                                 momentum=args.momentum,
                                 nesterov=False)
     elif args.optimizer == 'fame':
